@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Richart 信貸文案發想平台</title>
+<title>Richart 信貸文案發想平台 (Claude 版)</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -31,7 +31,7 @@
   input[type="text"],input[type="password"]{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Noto Sans TC',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;}
   input[type="text"]:focus,input[type="password"]:focus{border-color:var(--text);}
   input[type="password"]{font-family:'DM Mono',monospace;letter-spacing:.05em;}
-  .hint{font-size:11px;color:var(--text-hint);margin-top:2px;}
+  .hint{font-size:11px;color:var(--text-hint);margin-top:2px;line-height:1.4;}
   .key-row{display:flex;gap:8px;}
   .key-row input{flex:1;}
   .custom-select-wrap{position:relative;}
@@ -73,16 +73,17 @@
   th{background:var(--bg);color:var(--text-muted);font-weight:500;font-size:12px;padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
   td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6;}
   tr:last-child td{border-bottom:none;}
-  td:first-child{color:var(--text-muted);font-size:12px;white-space:nowrap;width:130px;font-family:'DM Mono',monospace;}
+  td:first-child{color:var(--text-muted);font-size:12px;white-space:nowrap;width:140px;font-family:'DM Mono',monospace;}
   .action-row{display:flex;gap:8px;margin-top:1rem;}
   .action-row .btn{flex:1;text-align:center;}
+  .counter-badge{font-size:12px; color:var(--accent-bg); background:#EAE9E4; padding:2px 8px; border-radius:12px; margin-left:auto; font-weight:500; letter-spacing:0;}
   @media(max-width:600px){.field-grid{grid-template-columns:1fr;}.platform-grid{grid-template-columns:repeat(3,1fr);}main{padding:1rem 1rem 3rem;}.field.full{grid-column:1;}}
 </style>
 </head>
 <body>
 <header>
   <span class="header-title">Richart 文案平台</span>
-  <span class="header-sub">信貸廣告文案發想工具</span>
+  <span class="header-sub">信貸廣告文案發想工具 (Powered by Claude)</span>
 </header>
 <main>
   <div class="card">
@@ -90,26 +91,50 @@
     <div class="field">
       <label>Anthropic API Key</label>
       <div class="key-row">
-        <input type="password" id="api-key" placeholder="sk-ant-api03-..." autocomplete="off" />
+        <input type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off" />
         <button class="btn" onclick="saveKey()">儲存</button>
       </div>
       <div class="key-status" id="key-status">已儲存，僅存在瀏覽器記憶體中，重新整理即清除</div>
     </div>
   </div>
+  
   <div class="card">
-    <div class="card-title">切角設定</div>
+    <div class="card-title">切角與架構設定</div>
     <div class="field-grid">
       <div class="field"><label>目標客群</label><div class="custom-select-wrap" id="audience-wrap"></div></div>
+      <div class="field"><label>新舊戶設定</label><div class="custom-select-wrap" id="customer-type-wrap"></div></div>
       <div class="field"><label>痛點切角</label><div class="custom-select-wrap" id="painpoint-wrap"></div></div>
       <div class="field"><label>廣告群組</label><div class="custom-select-wrap" id="adgroup-wrap"></div></div>
+      
+      <div class="field">
+        <label>文案架構</label>
+        <div class="custom-select-wrap" id="framework-wrap"></div>
+        <p class="hint">
+          • <b>AIDA</b>: 抓注意→引興趣→激慾望→促行動<br>
+          • <b>PAS</b>: 提出問題→放大痛點→解決方案<br>
+          • <b>FAB</b>: 產品特點→優點→對客好處<br>
+          • <b>Benefit over Feature</b>: 利益/好處優先溝通
+        </p>
+      </div>
+      
+      <div class="field">
+        <label>文案風格</label>
+        <div class="custom-select-wrap" id="style-wrap"></div>
+      </div>
+      
       <div class="field"><label>促購元素</label><div class="custom-select-wrap" id="promo-wrap"></div></div>
       
+      <div class="field">
+        <label>產出組數</label>
+        <div class="custom-select-wrap" id="variation-wrap"></div>
+        <p class="hint">可一次產出多組不同切角的文案變化</p>
+      </div>
+      
       <div class="field full">
-        <label>廣告到達網址（若有填寫，將依規則產出 UTM）</label>
+        <label>廣告到達網址（若有填寫，將依規則自動產出 UTM）</label>
         <input type="text" id="url" placeholder="https://tsbk.tw/..." />
       </div>
       
-      <!-- UTM 新增參數欄位 -->
       <div class="field">
         <label>素材名稱 (英文，供 UTM 使用)</label>
         <input type="text" id="utm-name" placeholder="例如：fast, promo" />
@@ -120,20 +145,27 @@
       </div>
     </div>
   </div>
+  
   <div class="card">
-    <div class="card-title">選擇平台</div>
+    <div class="card-title">
+      選擇平台 
+      <span class="counter-badge" id="platform-counter">選擇 0 個</span>
+    </div>
     <div class="platform-grid">
-      <button class="platform-btn active" data-p="Pmax">Pmax</button>
-      <button class="platform-btn active" data-p="Meta/FB">Meta/FB</button>
-      <button class="platform-btn active" data-p="LINELAP">LINELAP</button>
-      <button class="platform-btn active" data-p="YouTube">YouTube</button>
-      <button class="platform-btn active" data-p="推播/簡訊">推播/簡訊</button>
-      <button class="platform-btn active" data-p="BTS">BTS</button>
-      <button class="platform-btn active" data-p="EDM">EDM</button>
+      <button class="platform-btn" data-p="Pmax">Pmax</button>
+      <button class="platform-btn" data-p="Meta/FB">Meta/FB</button>
+      <button class="platform-btn" data-p="LINELAP">LINELAP</button>
+      <button class="platform-btn" data-p="YouTube">YouTube</button>
+      <button class="platform-btn" data-p="推播">推播</button>
+      <button class="platform-btn" data-p="簡訊">簡訊</button>
+      <button class="platform-btn" data-p="BTS">BTS</button>
+      <button class="platform-btn" data-p="EDM">EDM</button>
       <button class="platform-btn" data-p="DemandGen">DemandGen</button>
     </div>
   </div>
+  
   <button class="btn btn-primary" id="gen-btn" onclick="generate()">產出文案</button>
+  
   <div id="result-area" style="display:none;margin-top:1rem;">
     <div class="card">
       <div class="card-title">文案產出結果</div>
@@ -145,6 +177,7 @@
     </div>
   </div>
 </main>
+
 <script>
 function createSelect(containerId,options){
   const wrap=document.getElementById(containerId);
@@ -197,49 +230,74 @@ function createSelect(containerId,options){
   return{getValue:()=>selected};
 }
 
-const audienceSel=createSelect('audience-wrap',['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','老客戶回歸']);
-const painpointSel=createSelect('painpoint-wrap',['利率壓力大，每月還款吃掉薪水','只想借小額，不需要借太多','申辦流程繁瑣，需要臨櫃','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
-const adgroupSel=createSelect('adgroup-wrap',['大額','小額','不限']);
-const promoSel=createSelect('promo-wrap',['不加','輸入【RR2026】撥款後享最高10,000點台新Point','數量有限，限量前50名','申請最快3分鐘，核貸後最快18分鐘撥款','申請不用錢，喜歡再撥款']);
+// 建立下拉選單
+const audienceSel = createSelect('audience-wrap',['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','老客戶回歸']);
+const customerTypeSel = createSelect('customer-type-wrap',['不分新舊戶','新戶','舊戶']);
+const painpointSel = createSelect('painpoint-wrap',['利率壓力大，每月還款吃掉薪水','只想借小額，不需要借太多','申辦流程繁瑣，需要臨櫃','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
+const adgroupSel = createSelect('adgroup-wrap',['大額','小額','不限']);
+const frameworkSel = createSelect('framework-wrap',['PAS (問題→痛點→解方)', 'AIDA (注意→興趣→慾望→行動)', 'FAB (特點→優點→好處)', 'Benefit over Feature (好處優先)']);
+const styleSel = createSelect('style-wrap',['專業型', '故事感', '幽默感']);
+const promoSel = createSelect('promo-wrap',['不加','輸入【RR2026】撥款後享最高10,000點台新Point','數量有限，限量前50名','申請最快3分鐘，核貸後最快18分鐘撥款','申請不用錢，喜歡再撥款']);
+const variationSel = createSelect('variation-wrap',['1組','2組','3組']);
 
-document.querySelectorAll('.platform-btn').forEach(btn=>btn.addEventListener('click',()=>btn.classList.toggle('active')));
+// 平台按鈕與計數器邏輯
+const platformCounter = document.getElementById('platform-counter');
+function updatePlatformCount() {
+  const count = document.querySelectorAll('.platform-btn.active').length;
+  platformCounter.textContent = count === 0 ? '尚未選擇' : `選擇 ${count} 個`;
+}
+document.querySelectorAll('.platform-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    updatePlatformCount();
+  });
+});
+// 預設全不選，初始化計數器
+updatePlatformCount();
+
 function getSelectedPlatforms(){return[...document.querySelectorAll('.platform-btn.active')].map(b=>b.dataset.p);}
 
 let apiKey='',resultData=[];
 
 function saveKey(){
   const v=document.getElementById('api-key').value.trim();
-  if(!v.startsWith('sk-ant-')){alert('格式不對，請確認 Key 是否正確（應以 sk-ant- 開頭）');return;}
-  apiKey=v;document.getElementById('api-key').value='••••••••••••••••••••••••••••••';
+  if(!v.startsWith('sk-ant-')){alert('格式不對，Claude API Key 應該以 sk-ant- 開頭');return;}
+  apiKey=v;
+  document.getElementById('api-key').value='••••••••••••••••••••••••••••••';
   document.getElementById('key-status').style.display='block';
 }
 
 const platformSpecs={
-  'Pmax':'標題15字x5組(2組含Richart信貸)、長標題45字、短說明30字、長說明45字x4則(2則含Richart信貸、1則放短版警語)。禁用!和/符號。',
-  'DemandGen':'標題20字x5組(2組含Richart信貸)、長說明45字x5則(2則含Richart信貸、1則放短版警語)。禁用!和/符號。',
+  'Pmax':'標題15字x5組(2組含Richart信貸)、長標題45字、短說明30字、長說明45字x4則(2則含Richart信貸、1則放短版警語)。',
+  'DemandGen':'標題20字x5組(2組含Richart信貸)、長說明45字x5則(2則含Richart信貸、1則放短版警語)。',
   'Meta/FB':'標題12字、內文200字(含長版警語)、連結說明15字。',
-  'YouTube':'長標題45字、說明欄放短版警語(固定文字)、行動號召固定「立即申請」、標題7字(含Richart信貸)。禁用!和/符號。',
+  'YouTube':'長標題45字、說明欄放短版警語(獨立佔滿)、行動號召固定「立即申請」、標題7字(含Richart信貸)。',
   'LINELAP':'大圖標題10字、內文37字、小圖標題10字、長標題17字。',
-  '推播/簡訊':'標題7字、內文50字(含推播版警語)。',
+  '推播':'標題7字、內文50字(含推播版警語)。輸出格式：【標題】內文',
+  '簡訊':'標題7字、內文50字(含推播版警語)。輸出格式：【標題】內文',
   'BTS':'APP首頁標題7字、Bottom Sheet主標15字、內容50字、Action固定「立即申請」、備註100字(放長版警語)。',
   'EDM':'信件主旨12字(含Richart信貸、不需警語)。'
 };
 
 async function generate(){
-  if(!apiKey){alert('請先輸入並儲存 API Key');return;}
+  if(!apiKey){alert('請先輸入並儲存 Claude API Key');return;}
   const platforms=getSelectedPlatforms();
-  if(!platforms.length){alert('請至少選擇一個平台');return;}
+  if(!platforms.length){alert('請至少選擇一個平台才能產出！');return;}
   
-  const audience=audienceSel.getValue();
-  const painpoint=painpointSel.getValue();
-  const adgroup=adgroupSel.getValue();
-  const promo=promoSel.getValue();
+  const audience = audienceSel.getValue();
+  const customerType = customerTypeSel.getValue();
+  const painpoint = painpointSel.getValue();
+  const adgroup = adgroupSel.getValue();
+  const framework = frameworkSel.getValue();
+  const style = styleSel.getValue();
+  const promo = promoSel.getValue();
+  const variationsText = variationSel.getValue();
+  const numGroups = parseInt(variationsText) || 1;
   
-  const url=document.getElementById('url').value;
-  const utmName=document.getElementById('utm-name').value || 'promo';
-  const utmDate=document.getElementById('utm-date').value || new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const url = document.getElementById('url').value;
+  const utmName = document.getElementById('utm-name').value || 'promo';
+  const utmDate = document.getElementById('utm-date').value || new Date().toISOString().slice(0,10).replace(/-/g,'');
   
-  // 組裝群組代碼
   let groupCode = '';
   if(adgroup === '大額') groupCode = 'b';
   else if(adgroup === '小額') groupCode = 's';
@@ -251,50 +309,72 @@ async function generate(){
   
   const selectedSpecs=platforms.map(p=>`- ${p}：${platformSpecs[p]||'依平台規格'}`).join('\n');
   
-  const systemPrompt=`你是 Richart 信貸廣告文案專家。嚴格遵守以下限制：
-1. 【極度重要】只為用戶明確指定的平台產出文案，絕對不可以產出未指定的平台！
-2. 固定警語規則如下：
-短版：總費用年百分率:2.1%-16.39%*以實際審核條件為準及撥款時間為準
-長版：*總費用年百分率：2.1% - 16.39%\n*台新銀行保留最終核准貸款與否、貸款金額、年限及各項貸款條件之權利。\n*以實際審核條件及撥款時間為準
-推播版：*總費用年百分率：2.1% - 16.39%*以實際撥款利率為準
-注意：卡循族不溝通具體利率數字，改以整合卡債、降低月付壓力切入。
+  const systemPrompt=`你是 Richart 信貸廣告文案專家。嚴格遵守以下所有規範：
 
-【UTM 產出規則】
-若有提供到達網址，需為外部廣告平台在回傳欄位中獨立新增一列「最終到達網址」並組裝 UTM：
-- 格式：[網址]?utm_source=[來源]&utm_medium=[媒介]&utm_campaign=richart_${groupCode}loan${utmName}_${utmDate}
-- 來源與媒介對應字典：
-  - Pmax: utm_source=google, utm_medium=pmax
-  - DemandGen: utm_source=google, utm_medium=demendgen
-  - Meta/FB: utm_source=facebook, utm_medium=linkad
-  - YouTube: utm_source=youtube, utm_medium=videoad
-  - LINELAP: utm_source=line, utm_medium=linelapad
-- 內部渠道（BTS、推播/簡訊、EDM）「絕對不需」加 UTM 參數。
+【一、最高指導原則與平台限制】
+1. 絕對只為用戶指定的平台產出文案！
+2. 字符限制：Pmax、DemandGen、YouTube 絕對不能使用驚嘆號(!)、斜線(/)等符號。只能用半形逗號、句號或空白。
+3. 字數計算：1個中文字 = 2個半形字元。所有大於 999 的數字必須加千分位(如: 5,000)。
+4. 品牌規範：Pmax/DemandGen 標題必須有2則含「Richart信貸」；長說明必須有2則含「Richart信貸」。
 
-只回傳 JSON，格式：{"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}`;
+【二、各平台專屬警語規則】
+(注意：警語字數須計入總字數限制)
+1. 短版 (用於 Pmax、DemandGen、YouTube、LINELAP):
+   總費用年百分率:2.1%-16.39%*以實際審核條件為準及撥款時間為準
+   (注意短版符號：使用半形冒號，且不可有空格)
+2. 長版 (用於 Meta/FB內文末尾、BTS備註欄位):
+   *總費用年百分率：2.1% - 16.39%\\n*台新銀行保留最終核准貸款與否、貸款金額、年限及各項貸款條件之權利。\\n*以實際審核條件及撥款時間為準
+3. 推播版 (用於 推播/簡訊):
+   *總費用年百分率：2.1% - 16.39%*以實際撥款利率為準
+4. EDM 信件主旨：絕對不需要加警語。
 
-  const userPrompt=`目標客群：${audience}\n痛點切角：${painpoint}\n廣告群組：${adgroup}\n促購元素：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
+【三、UTM 產出規則】
+若用戶有提供到達網址，外部廣告需獨立新增一列欄位名稱為「最終到達網址」並組裝 UTM：
+格式：[網址]?utm_source=[來源]&utm_medium=[媒介]&utm_campaign=richart_${groupCode}loan${utmName}_${utmDate}
+- Pmax: utm_source=google, utm_medium=pmax
+- DemandGen: utm_source=google, utm_medium=demendgen
+- Meta/FB: utm_source=facebook, utm_medium=linkad
+- YouTube: utm_source=youtube, utm_medium=videoad
+- LINELAP: utm_source=line, utm_medium=linelapad
+⚠️內部渠道（BTS、推播、簡訊、EDM）絕對不需加 UTM 參數。
+
+【四、文案架構與風格要求】
+- 必須嚴格採用用戶指定的「文案架構」與「文案風格」進行撰寫。
+- 若客群為卡循族：絕對不溝通具體利率數字(如2.1%)，改以「整合卡債、降低月付壓力、找回生活品質」切入。
+
+【五、回傳格式與多組產出】
+必須只回傳乾淨的 JSON 格式資料，不要有任何 Markdown 標記或其他廢話，格式如下：
+{"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}
+
+${numGroups > 1 ? `⚠️ 注意：用戶要求產出 ${numGroups} 組不同的文案！請將同一平台的多組文案結果合併在同一個 platform 的 fields 陣列中。為了區分，請務必在欄位名稱前面加上組別（例如："【第1組】大圖標題"、"【第1組】內文"、"【第2組】大圖標題"、"【第2組】內文"），確保每個勾選的平台都產出完整的 ${numGroups} 組文案。` : ""}`;
+
+  const userPrompt=`目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n文案架構：${framework}\n文案風格：${style}\n廣告群組：${adgroup}\n促購元素：${promo==='不加'?'無':promo}\n產出組數：${variationsText}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
   
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:3000,
-        system:systemPrompt,
-        messages:[{role:'user',content:userPrompt}]
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }]
       })
     });
+    
     const data=await res.json();
-    if(data.error)throw new Error(data.error.message);
-    const text=data.content?.map(c=>c.text||'').join('')||'';
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-    resultData=parsed.results;renderResults(resultData);
+    if(data.error) throw new Error(data.error.message);
+    
+    const text = data.content?.map(c=>c.text||'').join('')||'';
+    const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+    
+    resultData = parsed.results;
+    renderResults(resultData);
   }catch(e){
     document.getElementById('result-content').innerHTML=`<div class="error">產出失敗：${e.message}</div>`;
   }
