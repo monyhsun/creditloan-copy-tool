@@ -1,118 +1,529 @@
 <!DOCTYPE html>
+
 <html lang="zh-TW">
+
 <head>
+
 <meta charset="UTF-8" />
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <title>Richart 信貸文案發想平台</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
 <style>
+
   :root {
+
     --bg:#F5F4F0;--surface:#FFF;--border:#E2E0D8;--border-strong:#C8C6BC;
+
     --text:#1A1916;--text-muted:#6B6960;--text-hint:#A8A69E;
+
     --accent-bg:#1A1916;--accent-text:#F5F4F0;
+
     --success-bg:#EDFAF3;--success-text:#1A7A4A;
+
     --danger-bg:#FFF0F0;--danger-text:#CC2222;
+
     --radius:10px;--radius-sm:6px;
+
   }
+
   *{box-sizing:border-box;margin:0;padding:0;}
+
   body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;}
+
   header{background:var(--accent-bg);color:var(--accent-text);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+
   .header-title{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
+
   .header-sub{font-size:12px;color:rgba(245,244,240,.5);font-family:'DM Mono',monospace;}
+
   main{max-width:860px;margin:0 auto;padding:2rem 1.5rem 4rem;}
+
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;}
+
   .card-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;}
+
   .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
   .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+
   .field{display:flex;flex-direction:column;gap:6px;}
+
   .field.full{grid-column:1/-1;}
+
   label{font-size:12px;font-weight:500;color:var(--text-muted);letter-spacing:.03em;}
+
   input[type="text"],input[type="password"]{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Noto Sans TC',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;}
+
   input[type="text"]:focus,input[type="password"]:focus{border-color:var(--text);}
+
   input[type="password"]{font-family:'DM Mono',monospace;letter-spacing:.05em;}
+
   .hint{font-size:11px;color:var(--text-hint);margin-top:2px;}
+
   .key-row{display:flex;gap:8px;}
+
   .key-row input{flex:1;}
+
   .custom-select-wrap{position:relative;}
+
   .custom-select-display{width:100%;padding:9px 36px 9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Noto Sans TC',sans-serif;font-size:14px;color:var(--text);background:var(--bg);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;transition:border-color .15s;}
+
   .custom-select-display:hover{border-color:var(--border-strong);}
+
   .custom-select-display.open{border-color:var(--text);}
+
   .custom-select-arrow{width:12px;height:12px;flex-shrink:0;color:var(--text-muted);}
+
   .custom-select-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.08);overflow:hidden;display:none;max-height:280px;overflow-y:auto;}
+
   .custom-select-dropdown.open{display:block;}
+
   .custom-select-option{padding:9px 14px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s;}
+
   .custom-select-option:hover{background:var(--bg);}
+
   .custom-select-option.selected{font-weight:500;}
+
   .del-btn{font-size:11px;color:var(--text-hint);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;display:none;}
+
   .custom-select-option:hover .del-btn{display:block;}
+
   .del-btn:hover{color:var(--danger-text) !important;background:var(--danger-bg) !important;}
+
   .custom-select-add{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);}
+
   .custom-select-add input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);outline:none;}
+
   .custom-select-add input:focus{border-color:var(--text);}
+
   .custom-select-add button{padding:6px 12px;font-size:13px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',sans-serif;}
+
   .custom-select-add button:hover{background:var(--bg);}
+
   .platform-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+
   .platform-btn{border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 4px;font-size:13px;font-family:'Noto Sans TC',sans-serif;color:var(--text-muted);background:var(--bg);cursor:pointer;text-align:center;user-select:none;transition:all .12s;}
+
   .platform-btn:hover{border-color:var(--border-strong);color:var(--text);}
+
   .platform-btn.active{background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent-bg);font-weight:500;}
+
   .key-status{font-size:12px;color:var(--success-text);background:var(--success-bg);border:1px solid #B6EDD1;border-radius:var(--radius-sm);padding:6px 10px;margin-top:6px;display:none;}
+
   .btn{padding:9px 18px;border-radius:var(--radius-sm);font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);transition:all .12s;white-space:nowrap;}
+
   .btn:hover{background:var(--bg);}
+
   .btn-primary{width:100%;padding:13px;font-size:15px;background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent-bg);border-radius:var(--radius);margin-top:.5rem;letter-spacing:.03em;}
+
   .btn-primary:hover{opacity:.88;background:var(--accent-bg);}
+
   .btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+
   .loading{text-align:center;padding:2.5rem;color:var(--text-muted);font-size:14px;}
+
   .loading-dots::after{content:'';animation:dots 1.2s steps(4,end) infinite;}
+
   @keyframes dots{0%,20%{content:''}40%{content:'.'}60%{content:'..'}80%,100%{content:'...'}}
+
   .error{background:var(--danger-bg);color:var(--danger-text);border:1px solid #F5CCCC;border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;}
+
   .result-block{margin-bottom:1.5rem;}
+
   .platform-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+
   .result-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm);}
+
   table{width:100%;border-collapse:collapse;font-size:13.5px;}
+
   th{background:var(--bg);color:var(--text-muted);font-weight:500;font-size:12px;padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+
   td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6;}
+
   tr:last-child td{border-bottom:none;}
+
   td:first-child{color:var(--text-muted);font-size:12px;white-space:nowrap;width:130px;font-family:'DM Mono',monospace;}
+
   .action-row{display:flex;gap:8px;margin-top:1rem;}
+
   .action-row .btn{flex:1;text-align:center;}
+
   @media(max-width:600px){.field-grid{grid-template-columns:1fr;}.platform-grid{grid-template-columns:repeat(3,1fr);}main{padding:1rem 1rem 3rem;}.field.full{grid-column:1;}}
+
 </style>
+
 </head>
+
 <body>
+
 <header>
+
   <span class="header-title">Richart 文案平台</span>
+
   <span class="header-sub">信貸廣告文案發想工具</span>
+
 </header>
+
 <main>
+
   <div class="card">
+
     <div class="card-title">API 設定</div>
+
     <div class="field">
+
       <label>Anthropic API Key</label>
+
       <div class="key-row">
+
         <input type="password" id="api-key" placeholder="sk-ant-api03-..." autocomplete="off" />
+
         <button class="btn" onclick="saveKey()">儲存</button>
+
       </div>
+
       <div class="key-status" id="key-status">已儲存，僅存在瀏覽器記憶體中，重新整理即清除</div>
+
       <p class="hint">Key 不會傳送到任何第三方，只用來直接呼叫 Anthropic API</p>
+
     </div>
+
   </div>
+
   <div class="card">
+
     <div class="card-title">切角設定</div>
+
     <div class="field-grid">
+
       <div class="field"><label>目標客群</label><div class="custom-select-wrap" id="audience-wrap"></div></div>
+
       <div class="field"><label>痛點切角</label><div class="custom-select-wrap" id="painpoint-wrap"></div></div>
+
       <div class="field"><label>廣告群組</label><div class="custom-select-wrap" id="adgroup-wrap"></div></div>
+
       <div class="field"><label>促購元素</label><div class="custom-select-wrap" id="promo-wrap"></div></div>
-      
-      <div class="field">
-        <label>素材名稱 (英文，如 promo)</label>
-        <input type="text" id="material-name" placeholder="預設：promo" />
-      </div>
-      <div class="field">
-        <label>上線日期 (YYYYMMDD)</label>
-        <input type="text" id="launch-date" placeholder="預設：今日日期" />
-      </div>
-      
+
       <div class="field full">
-        <label>廣告到達網址（無utm參數，選填）</label>
-        <input type="text
+
+        <label>廣告到達網址（選填）</label>
+
+        <input type="text" id="url" placeholder="https://tsbk.tw/..." />
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="card">
+
+    <div class="card-title">選擇平台</div>
+
+    <div class="platform-grid">
+
+      <button class="platform-btn active" data-p="Pmax">Pmax</button>
+
+      <button class="platform-btn active" data-p="Meta/FB">Meta/FB</button>
+
+      <button class="platform-btn active" data-p="LINELAP">LINELAP</button>
+
+      <button class="platform-btn active" data-p="YouTube">YouTube</button>
+
+      <button class="platform-btn active" data-p="推播/簡訊">推播/簡訊</button>
+
+      <button class="platform-btn active" data-p="BTS">BTS</button>
+
+      <button class="platform-btn active" data-p="EDM">EDM</button>
+
+      <button class="platform-btn" data-p="DemandGen">DemandGen</button>
+
+    </div>
+
+    <p class="hint" style="margin-top:10px;">點選平台可切換開啟／關閉</p>
+
+  </div>
+
+  <button class="btn btn-primary" id="gen-btn" onclick="generate()">產出文案</button>
+
+  <div id="result-area" style="display:none;margin-top:1rem;">
+
+    <div class="card">
+
+      <div class="card-title">文案產出結果</div>
+
+      <div id="result-content"></div>
+
+      <div class="action-row">
+
+        <button class="btn" onclick="downloadExcel()">下載 Excel</button>
+
+        <button class="btn" onclick="document.getElementById('result-area').style.display='none'">清除結果</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+
+function createSelect(containerId,options){
+
+  const wrap=document.getElementById(containerId);
+
+  let selected=options[0];
+
+  const display=document.createElement('div');
+
+  display.className='custom-select-display';
+
+  const lbl=document.createElement('span');
+
+  lbl.textContent=selected;
+
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+
+  svg.setAttribute('viewBox','0 0 12 8');svg.classList.add('custom-select-arrow');
+
+  svg.innerHTML='<path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+
+  display.appendChild(lbl);display.appendChild(svg);
+
+  const dd=document.createElement('div');dd.className='custom-select-dropdown';
+
+  let isOpen=false;
+
+  function renderOpts(){
+
+    dd.innerHTML='';
+
+    options.forEach((opt,i)=>{
+
+      const item=document.createElement('div');
+
+      item.className='custom-select-option'+(opt===selected?' selected':'');
+
+      const s=document.createElement('span');s.textContent=opt;item.appendChild(s);
+
+      if(i>0){
+
+        const del=document.createElement('button');del.className='del-btn';del.textContent='刪除';
+
+        del.onclick=(e)=>{e.stopPropagation();options.splice(i,1);if(selected===opt){selected=options[0];lbl.textContent=selected;}renderOpts();};
+
+        item.appendChild(del);
+
+      }
+
+      item.addEventListener('click',()=>{selected=opt;lbl.textContent=selected;close();});
+
+      dd.appendChild(item);
+
+    });
+
+    const addRow=document.createElement('div');addRow.className='custom-select-add';
+
+    const inp=document.createElement('input');inp.type='text';inp.placeholder='新增自訂選項...';
+
+    const abtn=document.createElement('button');abtn.textContent='新增';
+
+    abtn.onclick=()=>{const v=inp.value.trim();if(!v)return;options.push(v);selected=v;lbl.textContent=v;inp.value='';renderOpts();close();};
+
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')abtn.click();});
+
+    addRow.appendChild(inp);addRow.appendChild(abtn);dd.appendChild(addRow);
+
+  }
+
+  function close(){isOpen=false;dd.classList.remove('open');display.classList.remove('open');}
+
+  display.addEventListener('click',e=>{e.stopPropagation();isOpen=!isOpen;dd.classList.toggle('open',isOpen);display.classList.toggle('open',isOpen);});
+
+  document.addEventListener('click',close);
+
+  renderOpts();wrap.appendChild(display);wrap.appendChild(dd);
+
+  return{getValue:()=>selected};
+
+}
+
+
+
+const audienceSel=createSelect('audience-wrap',['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','老客戶回歸']);
+
+const painpointSel=createSelect('painpoint-wrap',['利率壓力大，每月還款吃掉薪水','只想借小額，不需要借太多','申辦流程繁瑣，需要臨櫃','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
+
+const adgroupSel=createSelect('adgroup-wrap',['大額','小額','不限']);
+
+const promoSel=createSelect('promo-wrap',['不加','輸入【RR2026】撥款後享最高10,000點台新Point','數量有限，限量前50名','申請最快3分鐘，核貸後最快18分鐘撥款','申請不用錢，喜歡再撥款']);
+
+
+
+document.querySelectorAll('.platform-btn').forEach(btn=>btn.addEventListener('click',()=>btn.classList.toggle('active')));
+
+function getSelectedPlatforms(){return[...document.querySelectorAll('.platform-btn.active')].map(b=>b.dataset.p);}
+
+
+
+let apiKey='',resultData=[];
+
+
+
+function saveKey(){
+
+  const v=document.getElementById('api-key').value.trim();
+
+  if(!v.startsWith('sk-ant-')){alert('格式不對，請確認 Key 是否正確（應以 sk-ant- 開頭）');return;}
+
+  apiKey=v;document.getElementById('api-key').value='••••••••••••••••••••••••••••••';
+
+  document.getElementById('key-status').style.display='block';
+
+}
+
+
+
+const platformSpecs={
+
+  'Pmax':'標題15字x5組(2組含Richart信貸)、長標題45字、短說明30字、長說明45字x4則(2則含Richart信貸、1則放短版警語)。禁用!和/符號。',
+
+  'DemandGen':'標題20字x5組(2組含Richart信貸)、長說明45字x5則(2則含Richart信貸、1則放短版警語)。禁用!和/符號。',
+
+  'Meta/FB':'標題12字、內文200字(含長版警語)、連結說明15字。',
+
+  'YouTube':'長標題45字、說明欄放短版警語(固定文字)、行動號召固定「立即申請」、標題7字(含Richart信貸)。禁用!和/符號。',
+
+  'LINELAP':'大圖標題10字、內文37字、小圖標題10字、長標題17字。',
+
+  '推播/簡訊':'標題7字、內文50字(含推播版警語)。',
+
+  'BTS':'APP首頁標題7字、Bottom Sheet主標15字、內容50字、Action固定「立即申請」、備註100字(放長版警語)。',
+
+  'EDM':'信件主旨12字(含Richart信貸、不需警語)。'
+
+};
+
+
+
+async function generate(){
+
+  if(!apiKey){alert('請先輸入並儲存 API Key');return;}
+
+  const platforms=getSelectedPlatforms();
+
+  if(!platforms.length){alert('請至少選擇一個平台');return;}
+
+  const audience=audienceSel.getValue(),painpoint=painpointSel.getValue(),adgroup=adgroupSel.getValue(),promo=promoSel.getValue(),url=document.getElementById('url').value;
+
+  const btn=document.getElementById('gen-btn');
+
+  btn.disabled=true;btn.textContent='產出中...';
+
+  document.getElementById('result-area').style.display='block';
+
+  document.getElementById('result-content').innerHTML='<div class="loading"><span class="loading-dots">Claude 正在發想文案</span></div>';
+
+  const selectedSpecs=platforms.map(p=>`- ${p}：${platformSpecs[p]||'依平台規格'}`).join('\n');
+
+  const systemPrompt=`你是 Richart 信貸廣告文案專家。嚴格只為用戶指定的平台產出文案，絕對不產出其他平台。
+
+固定警語：
+
+短版：總費用年百分率:2.1%-16.39%*以實際審核條件為準及撥款時間為準
+
+長版：*總費用年百分率：2.1% - 16.39%\n*台新銀行保留最終核准貸款與否、貸款金額、年限及各項貸款條件之權利。\n*以實際審核條件及撥款時間為準
+
+推播版：*總費用年百分率：2.1% - 16.39%*以實際撥款利率為準
+
+注意：卡循族不溝通具體利率數字，改以整合卡債、降低月付壓力切入。
+
+只回傳 JSON，格式：{"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}`;
+
+  const userPrompt=`目標客群：${audience}\n痛點切角：${painpoint}\n廣告群組：${adgroup}\n促購元素：${promo==='不加'?'無':promo}\n到達網址：${url||'（未提供）'}\n\n只產出以下${platforms.length}個平台，不得產出其他平台：\n${selectedSpecs}`;
+
+  try{
+
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3000,system:systemPrompt,messages:[{role:'user',content:userPrompt}]})});
+
+    const data=await res.json();
+
+    if(data.error)throw new Error(data.error.message);
+
+    const text=data.content?.map(c=>c.text||'').join('')||'';
+
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    resultData=parsed.results;renderResults(resultData);
+
+  }catch(e){document.getElementById('result-content').innerHTML=`<div class="error">產出失敗：${e.message}</div>`;}
+
+  btn.disabled=false;btn.textContent='重新產出';
+
+}
+
+
+
+function renderResults(results){
+
+  document.getElementById('result-content').innerHTML=results.map(r=>`<div class="result-block"><div class="platform-label">${r.platform}</div><div class="result-table-wrap"><table><thead><tr><th>欄位</th><th>文案</th></tr></thead><tbody>${r.fields.map(f=>`<tr><td>${f.name}</td><td>${f.content}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
+
+}
+
+
+
+function downloadExcel(){
+
+  if(!resultData.length){alert('還沒有文案可以下載');return;}
+
+  if(window.XLSX){doDownload();}
+
+  else{
+
+    const s=document.createElement('script');
+
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+
+    s.onload=doDownload;
+
+    s.onerror=()=>alert('無法載入 Excel 套件，請確認網路連線');
+
+    document.head.appendChild(s);
+
+  }
+
+}
+
+
+
+function doDownload(){
+
+  const wb=XLSX.utils.book_new();
+
+  resultData.forEach(r=>{
+
+    const rows=[['欄位','文案'],...r.fields.map(f=>[f.name,f.content])];
+
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+
+    ws['!cols']=[{wch:22},{wch:65}];
+
+    XLSX.utils.book_append_sheet(wb,ws,r.platform.slice(0,31));
+
+  });
+
+  XLSX.writeFile(wb,`Richart文案_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+}
+
+</script>
+
+</body>
+
+</html>
