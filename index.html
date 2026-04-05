@@ -94,7 +94,6 @@
         <button class="btn" onclick="saveKey()">儲存</button>
       </div>
       <div class="key-status" id="key-status">已儲存，僅存在瀏覽器記憶體中，重新整理即清除</div>
-      <p class="hint">Key 不會傳送到任何第三方，只用來直接呼叫 Anthropic API</p>
     </div>
   </div>
   <div class="card">
@@ -104,9 +103,20 @@
       <div class="field"><label>痛點切角</label><div class="custom-select-wrap" id="painpoint-wrap"></div></div>
       <div class="field"><label>廣告群組</label><div class="custom-select-wrap" id="adgroup-wrap"></div></div>
       <div class="field"><label>促購元素</label><div class="custom-select-wrap" id="promo-wrap"></div></div>
+      
       <div class="field full">
-        <label>廣告到達網址（選填）</label>
+        <label>廣告到達網址（若有填寫，將依規則產出 UTM）</label>
         <input type="text" id="url" placeholder="https://tsbk.tw/..." />
+      </div>
+      
+      <!-- UTM 新增參數欄位 -->
+      <div class="field">
+        <label>素材名稱 (英文，供 UTM 使用)</label>
+        <input type="text" id="utm-name" placeholder="例如：fast, promo" />
+      </div>
+      <div class="field">
+        <label>上線日期 (YYYYMMDD，供 UTM 使用)</label>
+        <input type="text" id="utm-date" placeholder="例如：20250903" />
       </div>
     </div>
   </div>
@@ -122,7 +132,6 @@
       <button class="platform-btn active" data-p="EDM">EDM</button>
       <button class="platform-btn" data-p="DemandGen">DemandGen</button>
     </div>
-    <p class="hint" style="margin-top:10px;">點選平台可切換開啟／關閉</p>
   </div>
   <button class="btn btn-primary" id="gen-btn" onclick="generate()">產出文案</button>
   <div id="result-area" style="display:none;margin-top:1rem;">
@@ -220,14 +229,27 @@ async function generate(){
   if(!apiKey){alert('請先輸入並儲存 API Key');return;}
   const platforms=getSelectedPlatforms();
   if(!platforms.length){alert('請至少選擇一個平台');return;}
-  const audience=audienceSel.getValue(),painpoint=painpointSel.getValue(),adgroup=adgroupSel.getValue(),promo=promoSel.getValue(),url=document.getElementById('url').value;
+  
+  const audience=audienceSel.getValue();
+  const painpoint=painpointSel.getValue();
+  const adgroup=adgroupSel.getValue();
+  const promo=promoSel.getValue();
+  
+  const url=document.getElementById('url').value;
+  const utmName=document.getElementById('utm-name').value || 'promo';
+  const utmDate=document.getElementById('utm-date').value || new Date().toISOString().slice(0,10).replace(/-/g,'');
+  
+  // 組裝群組代碼
+  let groupCode = '';
+  if(adgroup === '大額') groupCode = 'b';
+  else if(adgroup === '小額') groupCode = 's';
+
   const btn=document.getElementById('gen-btn');
   btn.disabled=true;btn.textContent='產出中...';
   document.getElementById('result-area').style.display='block';
   document.getElementById('result-content').innerHTML='<div class="loading"><span class="loading-dots">Claude 正在發想文案</span></div>';
-  const selectedSpecs=platforms.map(p=>`- ${p}：${platformSpecs[p]||'依平台規格'}`).join('\n');
   
-  const urlPrompt=url ? `到達網址：${url}\n（請務必為每個平台產生對應的 UTM 參數，格式為 ?utm_source=平台名稱&utm_medium=cpc&utm_campaign=richart_loan，並獨立新增一列「廣告連結」欄位顯示完整網址）` : `到達網址：（未提供）`;
+  const selectedSpecs=platforms.map(p=>`- ${p}：${platformSpecs[p]||'依平台規格'}`).join('\n');
   
   const systemPrompt=`你是 Richart 信貸廣告文案專家。嚴格遵守以下限制：
 1. 【極度重要】只為用戶明確指定的平台產出文案，絕對不可以產出未指定的平台！
@@ -236,18 +258,46 @@ async function generate(){
 長版：*總費用年百分率：2.1% - 16.39%\n*台新銀行保留最終核准貸款與否、貸款金額、年限及各項貸款條件之權利。\n*以實際審核條件及撥款時間為準
 推播版：*總費用年百分率：2.1% - 16.39%*以實際撥款利率為準
 注意：卡循族不溝通具體利率數字，改以整合卡債、降低月付壓力切入。
+
+【UTM 產出規則】
+若有提供到達網址，需為外部廣告平台在回傳欄位中獨立新增一列「最終到達網址」並組裝 UTM：
+- 格式：[網址]?utm_source=[來源]&utm_medium=[媒介]&utm_campaign=richart_${groupCode}loan${utmName}_${utmDate}
+- 來源與媒介對應字典：
+  - Pmax: utm_source=google, utm_medium=pmax
+  - DemandGen: utm_source=google, utm_medium=demendgen
+  - Meta/FB: utm_source=facebook, utm_medium=linkad
+  - YouTube: utm_source=youtube, utm_medium=videoad
+  - LINELAP: utm_source=line, utm_medium=linelapad
+- 內部渠道（BTS、推播/簡訊、EDM）「絕對不需」加 UTM 參數。
+
 只回傳 JSON，格式：{"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}`;
 
-  const userPrompt=`目標客群：${audience}\n痛點切角：${painpoint}\n廣告群組：${adgroup}\n促購元素：${promo==='不加'?'無':promo}\n${urlPrompt}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
+  const userPrompt=`目標客群：${audience}\n痛點切角：${painpoint}\n廣告群組：${adgroup}\n促購元素：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
   
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3000,system:systemPrompt,messages:[{role:'user',content:userPrompt}]})});
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:3000,
+        system:systemPrompt,
+        messages:[{role:'user',content:userPrompt}]
+      })
+    });
     const data=await res.json();
     if(data.error)throw new Error(data.error.message);
     const text=data.content?.map(c=>c.text||'').join('')||'';
     const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
     resultData=parsed.results;renderResults(resultData);
-  }catch(e){document.getElementById('result-content').innerHTML=`<div class="error">產出失敗：${e.message}</div>`;}
+  }catch(e){
+    document.getElementById('result-content').innerHTML=`<div class="error">產出失敗：${e.message}</div>`;
+  }
   btn.disabled=false;btn.textContent='重新產出';
 }
 
@@ -264,7 +314,6 @@ function downloadExcel(){
       const rows=[['欄位','文案'],...r.fields.map(f=>[f.name,f.content])];
       const ws=XLSX.utils.aoa_to_sheet(rows);
       ws['!cols']=[{wch:22},{wch:65}];
-      // 將斜線等 Excel 不允許的字元替換掉，避免程式報錯崩潰
       const safeSheetName = r.platform.replace(/[\\/*?:[\]]/g, '_').slice(0,31);
       XLSX.utils.book_append_sheet(wb,ws,safeSheetName);
     });
