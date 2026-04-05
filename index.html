@@ -77,6 +77,10 @@
   .action-row{display:flex;gap:8px;margin-top:1rem;}
   .action-row .btn{flex:1;text-align:center;}
   .counter-badge{font-size:12px; color:var(--accent-bg); background:#EAE9E4; padding:2px 8px; border-radius:12px; margin-left:auto; font-weight:500; letter-spacing:0;}
+  
+  /* A/B Test 高亮樣式 */
+  .ab-test-active { background: #FDF9E6 !important; border-color: #EBD984 !important; }
+  
   @media(max-width:600px){.field-grid{grid-template-columns:1fr;}.platform-grid{grid-template-columns:repeat(3,1fr);}main{padding:1rem 1rem 3rem;}.field.full{grid-column:1;}}
 </style>
 </head>
@@ -101,11 +105,12 @@
   <div class="card">
     <div class="card-title">切角與架構設定</div>
     <div class="field-grid">
+      <!-- 重新排序：產品 > 廣告群組 > 目標客群 > 新舊戶設定 > 痛點切角 > 文案架構 > 文案風格 > 促購元素(贈品) -->
+      <div class="field"><label>信貸產品</label><div class="custom-select-wrap" id="product-wrap"></div></div>
+      <div class="field"><label>廣告群組</label><div class="custom-select-wrap" id="adgroup-wrap"></div></div>
       <div class="field"><label>目標客群</label><div class="custom-select-wrap" id="audience-wrap"></div></div>
       <div class="field"><label>新舊戶設定</label><div class="custom-select-wrap" id="customer-type-wrap"></div></div>
       <div class="field"><label>痛點切角</label><div class="custom-select-wrap" id="painpoint-wrap"></div></div>
-      <div class="field"><label>廣告群組</label><div class="custom-select-wrap" id="adgroup-wrap"></div></div>
-      <div class="field"><label>信貸產品</label><div class="custom-select-wrap" id="product-wrap"></div></div>
       
       <div class="field">
         <label>文案架構</label>
@@ -123,15 +128,27 @@
         <div class="custom-select-wrap" id="style-wrap"></div>
       </div>
       
-      <div class="field"><label>促購元素</label><div class="custom-select-wrap" id="promo-wrap"></div></div>
+      <div class="field"><label>促購元素(贈品)</label><div class="custom-select-wrap" id="promo-wrap"></div></div>
       
-      <div class="field">
+      <!-- A/B Test 區塊 -->
+      <div class="field" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 4px;">
+        <label style="color: #B2821A;">啟用 A/B Test？</label>
+        <div class="custom-select-wrap" id="ab-toggle-wrap"></div>
+      </div>
+      
+      <div class="field" id="ab-variable-container" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 4px; display: none;">
+        <label style="color: #B2821A;">測試變因 (控制單一變數)</label>
+        <div class="custom-select-wrap" id="ab-variable-wrap"></div>
+        <p class="hint">系統將固定其他所有設定，僅針對此變因產出 A/B 兩版高度對照的文案。</p>
+      </div>
+
+      <div class="field" id="variation-container" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 4px;">
         <label>產出組數</label>
         <div class="custom-select-wrap" id="variation-wrap"></div>
         <p class="hint">可一次產出多組不同切角的文案變化</p>
       </div>
       
-      <div class="field full">
+      <div class="field full" style="margin-top: 12px;">
         <label>廣告到達網址（若有填寫，將依規則自動產出 UTM）</label>
         <input type="text" id="url" placeholder="https://tsbk.tw/..." />
       </div>
@@ -172,7 +189,6 @@
       <div class="card-title">文案產出結果</div>
       <div id="result-content"></div>
       
-      <!-- 新增的字數計算備註 -->
       <p class="hint" style="margin-top: 12px; margin-bottom: 12px;">💡 備註：依據「1個中文字 = 2個半形字元」的規範，上方括號內的數字為精準計算邏輯結果（中文字與全形符號算 1 字，半形英數字算 0.5 字，最後無條件進位）。</p>
       
       <div class="action-row">
@@ -184,7 +200,7 @@
 </main>
 
 <script>
-function createSelect(containerId,options){
+function createSelect(containerId,options, onChangeCallback=null){
   const wrap=document.getElementById(containerId);
   let selected=options[0];
   const display=document.createElement('div');
@@ -194,7 +210,10 @@ function createSelect(containerId,options){
   lbl.type='text';
   lbl.value=selected;
   lbl.style.cssText='border:none;outline:none;background:transparent;width:100%;font-family:inherit;font-size:inherit;color:inherit;';
-  lbl.addEventListener('input', e => selected = e.target.value);
+  lbl.addEventListener('input', e => {
+      selected = e.target.value;
+      if(onChangeCallback) onChangeCallback(selected);
+  });
   
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('viewBox','0 0 12 8');svg.classList.add('custom-select-arrow');
@@ -208,20 +227,33 @@ function createSelect(containerId,options){
       const item=document.createElement('div');
       item.className='custom-select-option'+(opt===selected?' selected':'');
       const s=document.createElement('span');s.textContent=opt;item.appendChild(s);
-      if(i>0){
+      if(i>0 && !['關閉','開啟'].includes(opt)){ // 防呆：不允許刪除開啟/關閉
         const del=document.createElement('button');del.className='del-btn';del.textContent='刪除';
-        del.onclick=(e)=>{e.stopPropagation();options.splice(i,1);if(selected===opt){selected=options[0];lbl.value=selected;}renderOpts();};
+        del.onclick=(e)=>{e.stopPropagation();options.splice(i,1);if(selected===opt){selected=options[0];lbl.value=selected;if(onChangeCallback) onChangeCallback(selected);}renderOpts();};
         item.appendChild(del);
       }
-      item.addEventListener('click',()=>{selected=opt;lbl.value=selected;close();});
+      item.addEventListener('click',()=>{
+          selected=opt;lbl.value=selected;
+          if(onChangeCallback) onChangeCallback(selected);
+          close();
+      });
       dd.appendChild(item);
     });
-    const addRow=document.createElement('div');addRow.className='custom-select-add';
-    const inp=document.createElement('input');inp.type='text';inp.placeholder='新增自訂選項...';
-    const abtn=document.createElement('button');abtn.textContent='新增';
-    abtn.onclick=()=>{const v=inp.value.trim();if(!v)return;options.push(v);selected=v;lbl.value=v;inp.value='';renderOpts();close();};
-    inp.addEventListener('keydown',e=>{if(e.key==='Enter')abtn.click();});
-    addRow.appendChild(inp);addRow.appendChild(abtn);dd.appendChild(addRow);
+    
+    // 如果是 A/B toggle 不要顯示新增
+    if(containerId !== 'ab-toggle-wrap' && containerId !== 'variation-wrap') {
+        const addRow=document.createElement('div');addRow.className='custom-select-add';
+        const inp=document.createElement('input');inp.type='text';inp.placeholder='新增自訂選項...';
+        const abtn=document.createElement('button');abtn.textContent='新增';
+        abtn.onclick=()=>{
+            const v=inp.value.trim();if(!v)return;
+            options.push(v);selected=v;lbl.value=v;inp.value='';
+            if(onChangeCallback) onChangeCallback(selected);
+            renderOpts();close();
+        };
+        inp.addEventListener('keydown',e=>{if(e.key==='Enter')abtn.click();});
+        addRow.appendChild(inp);addRow.appendChild(abtn);dd.appendChild(addRow);
+    }
   }
   function close(){isOpen=false;dd.classList.remove('open');display.classList.remove('open');}
   
@@ -232,19 +264,44 @@ function createSelect(containerId,options){
   document.addEventListener('click', e => { if(!wrap.contains(e.target)) close(); });
   
   renderOpts();wrap.appendChild(display);wrap.appendChild(dd);
-  return{getValue:()=>selected};
+  
+  return {
+    getValue:()=>selected,
+    getDisplayElement:()=>display
+  };
 }
 
 // 建立下拉選單
+const productSel = createSelect('product-wrap',['不分大小額','大額','小額']);
+const adgroupSel = createSelect('adgroup-wrap',['大額','小額','不限']);
 const audienceSel = createSelect('audience-wrap',['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','裝潢族','購車族','日常消費族','已還款一段時間的既有戶','已結清貸款的既有戶']);
 const customerTypeSel = createSelect('customer-type-wrap',['不分新舊戶','新戶','舊戶']);
 const painpointSel = createSelect('painpoint-wrap',['覺得貴','只想借小額','申辦流程繁瑣','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
-const adgroupSel = createSelect('adgroup-wrap',['大額','小額','不限']);
-const productSel = createSelect('product-wrap',['不分大小額','大額','小額']);
 const frameworkSel = createSelect('framework-wrap',['PAS (問題→痛點→解方)', 'AIDA (注意→興趣→慾望→行動)', 'FAB (特點→優點→好處)', 'Benefit over Feature (好處優先)']);
 const styleSel = createSelect('style-wrap',['專業型', '故事感', '幽默感']);
 const promoSel = createSelect('promo-wrap',['不加','輸入【RR2026】撥款後享最高10,000點台新Point','數量有限，限量前50名','申請最快3分鐘，核貸後最快18分鐘撥款','申請不用錢，喜歡再撥款']);
+
 const variationSel = createSelect('variation-wrap',['1組','2組','3組']);
+
+// A/B Test 相關邏輯
+const abVariableSel = createSelect('ab-variable-wrap',['有無最低月付','有無行動呼籲 (CTA)','理性數據 vs 感性訴求','第一人稱(我) vs 第三人稱(你)']);
+
+const abToggleSel = createSelect('ab-toggle-wrap', ['關閉', '開啟'], (val) => {
+    const varContainer = document.getElementById('variation-container');
+    const abVarContainer = document.getElementById('ab-variable-container');
+    const abToggleDisplay = abToggleSel.getDisplayElement();
+    
+    if(val === '開啟') {
+        varContainer.style.display = 'none';
+        abVarContainer.style.display = 'block';
+        abToggleDisplay.classList.add('ab-test-active');
+    } else {
+        varContainer.style.display = 'block';
+        abVarContainer.style.display = 'none';
+        abToggleDisplay.classList.remove('ab-test-active');
+    }
+});
+
 
 // 平台按鈕與計數器邏輯
 const platformCounter = document.getElementById('platform-counter');
@@ -275,7 +332,7 @@ function saveKey(){
 const platformSpecs={
   'Pmax':'標題15字x5組(1組含台新Richart信貸)、長標題45字、短說明30字、長說明45字x4則(1則含台新Richart信貸、1則放短版警語)。',
   'DemandGen':'標題20字x5組(1組含台新Richart信貸)、長說明45字x5則(1則含台新Richart信貸、1則放短版警語)。',
-  'Meta':'標題12字、內文200字(含長版警語)、連結說明15字。',
+  'Meta/FB':'標題12字、內文200字(含長版警語)、連結說明15字。',
   'YouTube':'長標題45字、說明欄放短版警語(獨立佔滿)、行動號召固定「立即申請」、標題7字(含Richart信貸)。',
   'LINELAP':'大圖標題10字、內文35字、小圖標題10字、長標題17字。',
   '推播':'標題7字、內文100字(含推播版警語)。輸出格式：【標題】內文',
@@ -299,16 +356,20 @@ async function generate(){
   const platforms=getSelectedPlatforms();
   if(!platforms.length){alert('請至少選擇一個平台才能產出！');return;}
   
+  const product = productSel.getValue();
+  const adgroup = adgroupSel.getValue();
   const audience = audienceSel.getValue();
   const customerType = customerTypeSel.getValue();
   const painpoint = painpointSel.getValue();
-  const adgroup = adgroupSel.getValue();
-  const product = productSel.getValue();
   const framework = frameworkSel.getValue();
   const style = styleSel.getValue();
   const promo = promoSel.getValue();
-  const variationsText = variationSel.getValue();
-  const numGroups = parseInt(variationsText) || 1;
+  
+  const isAbTest = abToggleSel.getValue() === '開啟';
+  const abVariable = abVariableSel.getValue();
+  
+  // 如果開啟 A/B Test 就不吃 variationsText，強迫產出2版
+  const numGroups = isAbTest ? 2 : (parseInt(variationSel.getValue()) || 1);
   
   const url = document.getElementById('url').value;
   const utmName = document.getElementById('utm-name').value || 'promo';
@@ -325,6 +386,23 @@ async function generate(){
   
   const selectedSpecs=platforms.map(p=>`- ${p}：${platformSpecs[p]||'依平台規格'}`).join('\n');
   
+  // 針對 A/B 測試的動態 Prompt
+  let multiGroupPrompt = "";
+  if (isAbTest) {
+      multiGroupPrompt = `
+【六、A/B Test 嚴格規範】
+使用者已開啟 A/B Test 模式！測試變因為：「${abVariable}」。
+請為每一個勾選的平台，剛好產出 2 組文案（A版 與 B版），合併在同一個 fields 陣列中回傳。
+- 【A版】必須包含或符合該變因的正向條件。
+- 【B版】必須不包含或符合該變因的反向條件。
+- ⚠️ 極度重要：為了控制變因，A版與B版的「句型架構、長度、主視覺感」必須「幾乎完全一樣」！除了測試變因相關的幾個字詞差異之外，其餘文案必須複製貼上。絕對不能發散變成兩篇截然不同的文案。
+- 輸出時，請務必在欄位名稱最前面加上版別，例如："【A版】標題"、"【B版】標題"、"【A版】內文"、"【B版】內文" 以此類推。`;
+  } else if (numGroups > 1) {
+      multiGroupPrompt = `
+【六、多組產出規範】
+⚠️ 注意：用戶要求產出 ${numGroups} 組不同的文案！請將同一平台的多組文案結果合併在同一個 platform 的 fields 陣列中。為了區分，請務必在欄位名稱前面加上組別（例如："【第1組】標題"、"【第1組】內文"、"【第2組】標題"、"【第2組】內文"），確保每個勾選的平台都產出完整的 ${numGroups} 組文案。`;
+  }
+
   const systemPrompt=`你是 Richart 信貸廣告文案專家。嚴格遵守以下所有規範：
 
 【一、最高指導原則與平台限制】
@@ -367,13 +445,12 @@ async function generate(){
 - 必須嚴格採用用戶指定的「文案架構」與「文案風格」進行撰寫。
 - 若客群為卡循族：絕對不溝通具體利率數字(如2.1%)，改以「整合卡債、降低月付壓力、找回生活品質」切入。
 
-【五、回傳格式與多組產出】
+【五、回傳格式】
 必須只回傳乾淨的 JSON 格式資料，不要有任何 Markdown 標記或其他廢話，格式如下：
 {"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}
+${multiGroupPrompt}`;
 
-${numGroups > 1 ? `⚠️ 注意：用戶要求產出 ${numGroups} 組不同的文案！請將同一平台的多組文案結果合併在同一個 platform 的 fields 陣列中。為了區分，請務必在欄位名稱前面加上組別（例如："【第1組】大圖標題"、"【第1組】內文"、"【第2組】大圖標題"、"【第2組】內文"），確保每個勾選的平台都產出完整的 ${numGroups} 組文案。` : ""}`;
-
-  const userPrompt=`目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n信貸產品：${product}\n文案架構：${framework}\n文案風格：${style}\n廣告群組：${adgroup}\n促購元素：${promo==='不加'?'無':promo}\n產出組數：${variationsText}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
+  const userPrompt=`目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n信貸產品：${product}\n文案架構：${framework}\n文案風格：${style}\n廣告群組：${adgroup}\n促購元素(贈品)：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
   
   try{
     const res = await fetch('https://api.anthropic.com/v1/messages', {
