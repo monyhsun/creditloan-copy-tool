@@ -231,9 +231,9 @@ function createSelect(containerId,options){
 }
 
 // 建立下拉選單
-const audienceSel = createSelect('audience-wrap',['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','老客戶回歸']);
+const audienceSel = createSelect('audience-wrap',['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','裝潢族','購車族','日常消費族','已還款一段時間的既有戶','已結清貸款的既有戶']);
 const customerTypeSel = createSelect('customer-type-wrap',['不分新舊戶','新戶','舊戶']);
-const painpointSel = createSelect('painpoint-wrap',['利率壓力大，每月還款吃掉薪水','只想借小額，不需要借太多','申辦流程繁瑣，需要臨櫃','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
+const painpointSel = createSelect('painpoint-wrap',['覺得貴','只想借小額','申辦流程繁瑣','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
 const adgroupSel = createSelect('adgroup-wrap',['大額','小額','不限']);
 const frameworkSel = createSelect('framework-wrap',['PAS (問題→痛點→解方)', 'AIDA (注意→興趣→慾望→行動)', 'FAB (特點→優點→好處)', 'Benefit over Feature (好處優先)']);
 const styleSel = createSelect('style-wrap',['專業型', '故事感', '幽默感']);
@@ -268,13 +268,13 @@ function saveKey(){
 }
 
 const platformSpecs={
-  'Pmax':'標題15字x5組(2組含Richart信貸)、長標題45字、短說明30字、長說明45字x4則(2則含Richart信貸、1則放短版警語)。',
-  'DemandGen':'標題20字x5組(2組含Richart信貸)、長說明45字x5則(2則含Richart信貸、1則放短版警語)。',
-  'Meta/FB':'標題12字、內文200字(含長版警語)、連結說明15字。',
+  'Pmax':'標題15字x5組(1組含台新Richart信貸)、長標題45字、短說明30字、長說明45字x4則(1則含台新Richart信貸、1則放短版警語)。',
+  'DemandGen':'標題20字x5組(1組含台新Richart信貸)、長說明45字x5則(1則含台新Richart信貸、1則放短版警語)。',
+  'Meta':'標題12字、內文200字(含長版警語)、連結說明15字。',
   'YouTube':'長標題45字、說明欄放短版警語(獨立佔滿)、行動號召固定「立即申請」、標題7字(含Richart信貸)。',
-  'LINELAP':'大圖標題10字、內文37字、小圖標題10字、長標題17字。',
-  '推播':'標題7字、內文50字(含推播版警語)。輸出格式：【標題】內文',
-  '簡訊':'標題7字、內文50字(含推播版警語)。輸出格式：【標題】內文',
+  'LINELAP':'大圖標題10字、內文35字、小圖標題10字、長標題17字。',
+  '推播':'標題7字、內文100字(含推播版警語)。輸出格式：【標題】內文',
+  '簡訊':'標題7字、內文70字(含簡訊警語與連結)。輸出格式：【標題】內文+連結',
   'BTS':'APP首頁標題7字、Bottom Sheet主標15字、內容50字、Action固定「立即申請」、備註100字(放長版警語)。',
   'EDM':'信件主旨12字(含Richart信貸、不需警語)。'
 };
@@ -317,16 +317,27 @@ async function generate(){
 3. 字數計算：1個中文字 = 2個半形字元。所有大於 999 的數字必須加千分位(如: 5,000)。
 4. 品牌規範：Pmax/DemandGen 標題必須有2則含「Richart信貸」；長說明必須有2則含「Richart信貸」。
 
-【二、各平台專屬警語規則】
-(注意：警語字數須計入總字數限制)
-1. 短版 (用於 Pmax、DemandGen、YouTube、LINELAP):
-   總費用年百分率:2.1%-16.39%*以實際審核條件為準及撥款時間為準
-   (注意短版符號：使用半形冒號，且不可有空格)
-2. 長版 (用於 Meta/FB內文末尾、BTS備註欄位):
-   *總費用年百分率：2.1% - 16.39%\\n*台新銀行保留最終核准貸款與否、貸款金額、年限及各項貸款條件之權利。\\n*以實際審核條件及撥款時間為準
-3. 推播版 (用於 推播/簡訊):
-   *總費用年百分率：2.1% - 16.39%*以實際撥款利率為準
-4. EDM 信件主旨：絕對不需要加警語。
+【二、各平台專屬警語與動態利率規範】
+1. 基礎利率邏輯 (APR Selection)
+  依據產品額度與受眾對象，自動切換百分率區間：
+  限定小額： 3.99%-16.39%
+  大額或不分大小額：
+    舊戶限定： 2.88%-16.39%
+    新戶 / 不分新舊戶： 2.1%-16.39%
+2. 警語觸發邏輯 (Disclaimer Trigger)
+  檢查文案內容，自動組合結尾文字：
+  提到「時間」： 以實際撥款時間為準
+  提到「利率/期數/手續費」： 以實際審核條件為準
+  兩者皆提到： 以實際審核條件及撥款時間為準
+
+3. 各平台格式規範 (Platform Standards)注意： 警語字數須計入總字數限制。
+  A.用於 Pmax、DemandGen、YouTube、LINELAP、推播、簡訊
+    格式：不使用冒號，且全程不可有空格。
+        範例：*總費用年百分率2.1%-16.39%*以實際審核條件及撥款時間為準
+  B. EDM 規範
+    信件主旨： 絕對不需要加警語。
+
+
 
 【三、UTM 產出規則】
 若用戶有提供到達網址，外部廣告需獨立新增一列欄位名稱為「最終到達網址」並組裝 UTM：
@@ -336,7 +347,7 @@ async function generate(){
 - Meta/FB: utm_source=facebook, utm_medium=linkad
 - YouTube: utm_source=youtube, utm_medium=videoad
 - LINELAP: utm_source=line, utm_medium=linelapad
-⚠️內部渠道（BTS、推播、簡訊、EDM）絕對不需加 UTM 參數。
+⚠️內部渠道（BTS、推播）絕對不需加 UTM 參數。
 
 【四、文案架構與風格要求】
 - 必須嚴格採用用戶指定的「文案架構」與「文案風格」進行撰寫。
