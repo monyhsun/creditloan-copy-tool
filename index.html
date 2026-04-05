@@ -128,22 +128,28 @@
       
       <div class="field"><label>促購元素(贈品)</label><div class="custom-select-wrap" id="promo-wrap"></div></div>
       
-      <!-- A/B Test 區塊 -->
-      <div class="field" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 4px;">
-        <label style="color: #B2821A;">啟用 A/B Test？</label>
-        <div class="custom-select-wrap" id="ab-toggle-wrap"></div>
-      </div>
-      
-      <div class="field" id="ab-variable-container" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 4px; display: none;">
-        <label style="color: #B2821A;">測試變因 (控制單一變數)</label>
-        <div class="custom-select-wrap" id="ab-variable-wrap"></div>
-        <p class="hint">系統將固定其他所有設定，僅針對此變因產出 A/B 兩版高度對照的文案。</p>
-      </div>
+      <!-- A/B Test 與 組數整合區塊 -->
+      <div class="field full" style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 4px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          
+          <div class="field">
+            <label style="color: #B2821A;">啟用 A/B Test？</label>
+            <div class="custom-select-wrap" id="ab-toggle-wrap"></div>
+          </div>
+          
+          <div class="field" id="ab-variable-container" style="display: none;">
+            <label style="color: #B2821A;">測試變因 (控制單一變數)</label>
+            <div class="custom-select-wrap" id="ab-variable-wrap"></div>
+            <p class="hint">系統將固定其他所有設定，僅針對此變因產出 A/B 兩版高度對照的文案。</p>
+          </div>
 
-      <div class="field" id="variation-container" style="border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 4px;">
-        <label>產出組數</label>
-        <div class="custom-select-wrap" id="variation-wrap"></div>
-        <p class="hint">可一次產出多組不同切角的文案變化</p>
+          <div class="field" id="variation-container">
+            <label>產出組數</label>
+            <div class="custom-select-wrap" id="variation-wrap"></div>
+            <p class="hint">可一次產出多組不同切角的文案變化</p>
+          </div>
+
+        </div>
       </div>
       
       <div class="field full" style="margin-top: 12px;">
@@ -289,10 +295,10 @@ const abToggleSel = createSelect('ab-toggle-wrap', ['關閉', '開啟'], (val) =
     
     if(val === '開啟') {
         varContainer.style.display = 'none';
-        abVarContainer.style.display = 'block';
+        abVarContainer.style.display = 'flex';
         abToggleDisplay.classList.add('ab-test-active');
     } else {
-        varContainer.style.display = 'block';
+        varContainer.style.display = 'flex';
         abVarContainer.style.display = 'none';
         abToggleDisplay.classList.remove('ab-test-active');
     }
