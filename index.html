@@ -193,7 +193,7 @@
       <div class="card-title">文案產出結果</div>
       <div id="result-content"></div>
       
-      <p class="hint" style="margin-top: 12px; margin-bottom: 12px;">💡 備註：依據「1個中文字 = 2個半形字元」的規範，上方括號內的數字為精準計算邏輯結果（中文字與全形符號算 1 字，半形英數字算 0.5 字，最後無條件進位）。</p>
+      <p class="hint" style="margin-top: 12px; margin-bottom: 12px;">💡 備註：依據「1個中文字 = 2個半形字元」的規範，上方括號內的數字為精準計算邏輯結果（中文字與全形符號算 1 字，半形英數字算 0.5 字，最後無條件進位）。Excel 下載後的字數則為原生的 LEN() 公式長度。</p>
       
       <div class="action-row">
         <button class="btn" onclick="downloadExcel()">下載 Excel</button>
@@ -295,10 +295,10 @@ const abToggleSel = createSelect('ab-toggle-wrap', ['關閉', '開啟'], (val) =
     
     if(val === '開啟') {
         varContainer.style.display = 'none';
-        abVarContainer.style.display = 'flex';
+        abVarContainer.style.display = 'block';
         abToggleDisplay.classList.add('ab-test-active');
     } else {
-        varContainer.style.display = 'flex';
+        varContainer.style.display = 'block';
         abVarContainer.style.display = 'none';
         abToggleDisplay.classList.remove('ab-test-active');
     }
@@ -504,9 +504,14 @@ function downloadExcel(){
   try {
     const wb=XLSX.utils.book_new();
     resultData.forEach(r=>{
-      const rows=[['欄位','文案'],...r.fields.map(f=>[f.name,f.content])];
+      // 在 Excel 中新增字數欄位，並填入原生 LEN 函數
+      const rows=[['欄位','文案', '字數']];
+      r.fields.forEach((f, index) => {
+        // index 從 0 開始，對應到 Excel 第 2 列 (B2)
+        rows.push([f.name, f.content, { f: `LEN(B${index + 2})` }]);
+      });
       const ws=XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols']=[{wch:22},{wch:65}];
+      ws['!cols']=[{wch:22},{wch:65},{wch:10}];
       const safeSheetName = r.platform.replace(/[\\/*?:[\]]/g, '_').slice(0,31);
       XLSX.utils.book_append_sheet(wb,ws,safeSheetName);
     });
