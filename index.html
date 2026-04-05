@@ -105,9 +105,7 @@
   <div class="card">
     <div class="card-title">切角與架構設定</div>
     <div class="field-grid">
-      <!-- 重新排序：產品 > 廣告群組 > 目標客群 > 新舊戶設定 > 痛點切角 > 文案架構 > 文案風格 > 促購元素(贈品) -->
-      <div class="field"><label>信貸產品</label><div class="custom-select-wrap" id="product-wrap"></div></div>
-      <div class="field"><label>廣告群組</label><div class="custom-select-wrap" id="adgroup-wrap"></div></div>
+      <div class="field"><label>信貸產品 (群組)</label><div class="custom-select-wrap" id="product-wrap"></div></div>
       <div class="field"><label>目標客群</label><div class="custom-select-wrap" id="audience-wrap"></div></div>
       <div class="field"><label>新舊戶設定</label><div class="custom-select-wrap" id="customer-type-wrap"></div></div>
       <div class="field"><label>痛點切角</label><div class="custom-select-wrap" id="painpoint-wrap"></div></div>
@@ -227,7 +225,7 @@ function createSelect(containerId,options, onChangeCallback=null){
       const item=document.createElement('div');
       item.className='custom-select-option'+(opt===selected?' selected':'');
       const s=document.createElement('span');s.textContent=opt;item.appendChild(s);
-      if(i>0 && !['關閉','開啟'].includes(opt)){ // 防呆：不允許刪除開啟/關閉
+      if(i>0 && !['關閉','開啟'].includes(opt)){ 
         const del=document.createElement('button');del.className='del-btn';del.textContent='刪除';
         del.onclick=(e)=>{e.stopPropagation();options.splice(i,1);if(selected===opt){selected=options[0];lbl.value=selected;if(onChangeCallback) onChangeCallback(selected);}renderOpts();};
         item.appendChild(del);
@@ -240,7 +238,6 @@ function createSelect(containerId,options, onChangeCallback=null){
       dd.appendChild(item);
     });
     
-    // 如果是 A/B toggle 不要顯示新增
     if(containerId !== 'ab-toggle-wrap' && containerId !== 'variation-wrap') {
         const addRow=document.createElement('div');addRow.className='custom-select-add';
         const inp=document.createElement('input');inp.type='text';inp.placeholder='新增自訂選項...';
@@ -273,7 +270,6 @@ function createSelect(containerId,options, onChangeCallback=null){
 
 // 建立下拉選單
 const productSel = createSelect('product-wrap',['不分大小額','大額','小額']);
-const adgroupSel = createSelect('adgroup-wrap',['大額','小額','不限']);
 const audienceSel = createSelect('audience-wrap',['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','裝潢族','購車族','日常消費族','已還款一段時間的既有戶','已結清貸款的既有戶']);
 const customerTypeSel = createSelect('customer-type-wrap',['不分新舊戶','新戶','舊戶']);
 const painpointSel = createSelect('painpoint-wrap',['覺得貴','只想借小額','申辦流程繁瑣','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
@@ -341,7 +337,7 @@ const platformSpecs={
   'EDM':'信件主旨12字(含Richart信貸、不需警語)。'
 };
 
-// 依據廣告平台常見計算邏輯：中文字與全形為 1 字，半形英文數字為 0.5 字
+// 計算字數
 function getCharCount(str) {
   if (!str) return 0;
   let len = 0;
@@ -357,7 +353,6 @@ async function generate(){
   if(!platforms.length){alert('請至少選擇一個平台才能產出！');return;}
   
   const product = productSel.getValue();
-  const adgroup = adgroupSel.getValue();
   const audience = audienceSel.getValue();
   const customerType = customerTypeSel.getValue();
   const painpoint = painpointSel.getValue();
@@ -368,16 +363,18 @@ async function generate(){
   const isAbTest = abToggleSel.getValue() === '開啟';
   const abVariable = abVariableSel.getValue();
   
-  // 如果開啟 A/B Test 就不吃 variationsText，強迫產出2版
   const numGroups = isAbTest ? 2 : (parseInt(variationSel.getValue()) || 1);
   
-  const url = document.getElementById('url').value;
-  const utmName = document.getElementById('utm-name').value || 'promo';
-  const utmDate = document.getElementById('utm-date').value || new Date().toISOString().slice(0,10).replace(/-/g,'');
+  // 強制清除網址中的任何空白
+  const url = document.getElementById('url').value.trim().replace(/\s+/g, '');
+  // 強制將素材名稱的空白替換為底線
+  const utmName = (document.getElementById('utm-name').value || 'promo').trim().replace(/\s+/g, '_');
+  // 強制清除日期中的任何空白與橫線
+  const utmDate = (document.getElementById('utm-date').value || new Date().toISOString().slice(0,10).replace(/-/g,'')).trim().replace(/\s+/g, '');
   
   let groupCode = '';
-  if(product === '大額' || adgroup === '大額') groupCode = 'b';
-  else if(product === '小額' || adgroup === '小額') groupCode = 's';
+  if(product === '大額') groupCode = 'b';
+  else if(product === '小額') groupCode = 's';
 
   const btn=document.getElementById('gen-btn');
   btn.disabled=true;btn.textContent='產出中...';
@@ -386,7 +383,6 @@ async function generate(){
   
   const selectedSpecs=platforms.map(p=>`- ${p}：${platformSpecs[p]||'依平台規格'}`).join('\n');
   
-  // 針對 A/B 測試的動態 Prompt
   let multiGroupPrompt = "";
   if (isAbTest) {
       multiGroupPrompt = `
@@ -439,7 +435,8 @@ async function generate(){
 - Meta/FB: utm_source=facebook, utm_medium=linkad
 - YouTube: utm_source=youtube, utm_medium=videoad
 - LINELAP: utm_source=line, utm_medium=linelapad
-⚠️內部渠道（BTS、推播、簡訊、EDM）絕對不需加 UTM 參數。
+⚠️ 網址無空白警告：最終輸出的到達網址與 UTM 字串中【絕對不可以有任何空格 (Space)】。符號（?、=、&）前後必須緊密相連。
+⚠️ 內部渠道（BTS、推播、簡訊、EDM）絕對不需加 UTM 參數。
 
 【四、文案架構與風格要求】
 - 必須嚴格採用用戶指定的「文案架構」與「文案風格」進行撰寫。
@@ -450,7 +447,7 @@ async function generate(){
 {"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}
 ${multiGroupPrompt}`;
 
-  const userPrompt=`目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n信貸產品：${product}\n文案架構：${framework}\n文案風格：${style}\n廣告群組：${adgroup}\n促購元素(贈品)：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
+  const userPrompt=`目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n信貸產品(群組)：${product}\n文案架構：${framework}\n文案風格：${style}\n促購元素(贈品)：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
   
   try{
     const res = await fetch('https://api.anthropic.com/v1/messages', {
