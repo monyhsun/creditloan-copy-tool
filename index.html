@@ -3,85 +3,102 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Richart 信貸文案發想平台 (Claude 版)</title>
+<title>Richart 信貸文案發想平台-重構</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+  /* =========================================
+     CSS 變數與基礎設定
+     ========================================= */
   :root {
-    --bg:#F5F4F0;--surface:#FFF;--border:#E2E0D8;--border-strong:#C8C6BC;
-    --text:#1A1916;--text-muted:#6B6960;--text-hint:#A8A69E;
-    --accent-bg:#1A1916;--accent-text:#F5F4F0;
-    --success-bg:#EDFAF3;--success-text:#1A7A4A;
-    --danger-bg:#FFF0F0;--danger-text:#CC2222;
-    --radius:10px;--radius-sm:6px;
+    --bg: #F5F4F0; --surface: #FFF; --border: #E2E0D8; --border-strong: #C8C6BC;
+    --text: #1A1916; --text-muted: #6B6960; --text-hint: #A8A69E;
+    --accent-bg: #1A1916; --accent-text: #F5F4F0;
+    --success-bg: #EDFAF3; --success-text: #1A7A4A;
+    --danger-bg: #FFF0F0; --danger-text: #CC2222;
+    --radius: 10px; --radius-sm: 6px;
   }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6;min-height:100vh;}
-  header{background:var(--accent-bg);color:var(--accent-text);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-  .header-title{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;}
-  .header-sub{font-size:12px;color:rgba(245,244,240,.5);font-family:'DM Mono',monospace;}
-  main{max-width:860px;margin:0 auto;padding:2rem 1.5rem 4rem;}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1rem;}
-  .card-title{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;}
-  .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
-  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
-  .field{display:flex;flex-direction:column;gap:6px;}
-  .field.full{grid-column:1/-1;}
-  label{font-size:12px;font-weight:500;color:var(--text-muted);letter-spacing:.03em;}
-  input[type="text"],input[type="password"]{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Noto Sans TC',sans-serif;font-size:14px;color:var(--text);background:var(--bg);outline:none;transition:border-color .15s;}
-  input[type="text"]:focus,input[type="password"]:focus{border-color:var(--text);}
-  input[type="password"]{font-family:'DM Mono',monospace;letter-spacing:.05em;}
-  .hint{font-size:11px;color:var(--text-hint);margin-top:2px;line-height:1.4;}
-  .key-row{display:flex;gap:8px;}
-  .key-row input{flex:1;}
-  .custom-select-wrap{position:relative;}
-  .custom-select-display{width:100%;padding:9px 36px 9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Noto Sans TC',sans-serif;font-size:14px;color:var(--text);background:var(--bg);cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;transition:border-color .15s;}
-  .custom-select-display:hover{border-color:var(--border-strong);}
-  .custom-select-display.open{border-color:var(--text);}
-  .custom-select-arrow{width:12px;height:12px;flex-shrink:0;color:var(--text-muted);}
-  .custom-select-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.08);overflow:hidden;display:none;max-height:280px;overflow-y:auto;}
-  .custom-select-dropdown.open{display:block;}
-  .custom-select-option{padding:9px 14px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s;}
-  .custom-select-option:hover{background:var(--bg);}
-  .custom-select-option.selected{font-weight:500;}
-  .del-btn{font-size:11px;color:var(--text-hint);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;display:none;}
-  .custom-select-option:hover .del-btn{display:block;}
-  .del-btn:hover{color:var(--danger-text) !important;background:var(--danger-bg) !important;}
-  .custom-select-add{display:flex;gap:6px;padding:8px 10px;border-top:1px solid var(--border);}
-  .custom-select-add input{flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);outline:none;}
-  .custom-select-add input:focus{border-color:var(--text);}
-  .custom-select-add button{padding:6px 12px;font-size:13px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);cursor:pointer;white-space:nowrap;font-family:'Noto Sans TC',sans-serif;}
-  .custom-select-add button:hover{background:var(--bg);}
-  .platform-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-  .platform-btn{border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 4px;font-size:13px;font-family:'Noto Sans TC',sans-serif;color:var(--text-muted);background:var(--bg);cursor:pointer;text-align:center;user-select:none;transition:all .12s;}
-  .platform-btn:hover{border-color:var(--border-strong);color:var(--text);}
-  .platform-btn.active{background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent-bg);font-weight:500;}
-  .key-status{font-size:12px;color:var(--success-text);background:var(--success-bg);border:1px solid #B6EDD1;border-radius:var(--radius-sm);padding:6px 10px;margin-top:6px;display:none;}
-  .btn{padding:9px 18px;border-radius:var(--radius-sm);font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);transition:all .12s;white-space:nowrap;}
-  .btn:hover{background:var(--bg);}
-  .btn-primary{width:100%;padding:13px;font-size:15px;background:var(--accent-bg);color:var(--accent-text);border-color:var(--accent-bg);border-radius:var(--radius);margin-top:.5rem;letter-spacing:.03em;}
-  .btn-primary:hover{opacity:.88;background:var(--accent-bg);}
-  .btn-primary:disabled{opacity:.4;cursor:not-allowed;}
-  .loading{text-align:center;padding:2.5rem;color:var(--text-muted);font-size:14px;}
-  .loading-dots::after{content:'';animation:dots 1.2s steps(4,end) infinite;}
-  @keyframes dots{0%,20%{content:''}40%{content:'.'}60%{content:'..'}80%,100%{content:'...'}}
-  .error{background:var(--danger-bg);color:var(--danger-text);border:1px solid #F5CCCC;border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;}
-  .result-block{margin-bottom:1.5rem;}
-  .platform-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
-  .result-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm);}
-  table{width:100%;border-collapse:collapse;font-size:13.5px;}
-  th{background:var(--bg);color:var(--text-muted);font-weight:500;font-size:12px;padding:9px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
-  td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.6;}
-  tr:last-child td{border-bottom:none;}
-  td:first-child{color:var(--text-muted);font-size:12px;white-space:nowrap;width:140px;font-family:'DM Mono',monospace;}
-  .action-row{display:flex;gap:8px;margin-top:1rem;}
-  .action-row .btn{flex:1;text-align:center;}
-  .counter-badge{font-size:12px; color:var(--accent-bg); background:#EAE9E4; padding:2px 8px; border-radius:12px; margin-left:auto; font-weight:500; letter-spacing:0;}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; min-height: 100vh; }
   
-  /* A/B Test 高亮樣式 */
+  /* =========================================
+     排版與區塊
+     ========================================= */
+  header { background: var(--accent-bg); color: var(--accent-text); padding: 0 2rem; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .header-sub { font-size: 12px; color: rgba(245,244,240,.5); font-family: 'DM Mono', monospace; }
+  main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  .card-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px; }
+  .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  
+  /* =========================================
+     表單元素
+     ========================================= */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 500; color: var(--text-muted); letter-spacing: .03em; }
+  input[type="text"], input[type="password"] { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); outline: none; transition: border-color .15s; }
+  input[type="text"]:focus, input[type="password"]:focus { border-color: var(--text); }
+  input[type="password"] { font-family: 'DM Mono', monospace; letter-spacing: .05em; }
+  .hint { font-size: 11px; color: var(--text-hint); margin-top: 2px; line-height: 1.4; }
+  .key-row { display: flex; gap: 8px; }
+  .key-row input { flex: 1; }
+  
+  /* 自訂下拉選單樣式 */
+  .custom-select-wrap { position: relative; }
+  .custom-select-display { width: 100%; padding: 9px 36px 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; transition: border-color .15s; }
+  .custom-select-display:hover { border-color: var(--border-strong); }
+  .custom-select-display.open { border-color: var(--text); }
+  .custom-select-arrow { width: 12px; height: 12px; flex-shrink: 0; color: var(--text-muted); }
+  .custom-select-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,.08); overflow: hidden; display: none; max-height: 280px; overflow-y: auto; }
+  .custom-select-dropdown.open { display: block; }
+  .custom-select-option { padding: 9px 14px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background .1s; }
+  .custom-select-option:hover { background: var(--bg); }
+  .custom-select-option.selected { font-weight: 500; }
+  .del-btn { font-size: 11px; color: var(--text-hint); background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; display: none; }
+  .custom-select-option:hover .del-btn { display: block; }
+  .del-btn:hover { color: var(--danger-text) !important; background: var(--danger-bg) !important; }
+  .custom-select-add { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--border); }
+  .custom-select-add input { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); outline: none; }
+  .custom-select-add button { padding: 6px 12px; font-size: 13px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; font-family: 'Noto Sans TC', sans-serif; }
+  
+  /* =========================================
+     按鈕與狀態
+     ========================================= */
+  .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .platform-btn { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 4px; font-size: 13px; font-family: 'Noto Sans TC', sans-serif; color: var(--text-muted); background: var(--bg); cursor: pointer; text-align: center; user-select: none; transition: all .12s; }
+  .platform-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .platform-btn.active { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); font-weight: 500; }
+  .key-status { font-size: 12px; color: var(--success-text); background: var(--success-bg); border: 1px solid #B6EDD1; border-radius: var(--radius-sm); padding: 6px 10px; margin-top: 6px; display: none; }
+  .btn { padding: 9px 18px; border-radius: var(--radius-sm); font-family: 'Noto Sans TC', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); transition: all .12s; white-space: nowrap; }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { width: 100%; padding: 13px; font-size: 15px; background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); border-radius: var(--radius); margin-top: .5rem; letter-spacing: .03em; }
+  .btn-primary:hover { opacity: .88; background: var(--accent-bg); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .counter-badge { font-size: 12px; color: var(--accent-bg); background: #EAE9E4; padding: 2px 8px; border-radius: 12px; margin-left: auto; font-weight: 500; letter-spacing: 0; }
   .ab-test-active { background: #FDF9E6 !important; border-color: #EBD984 !important; }
   
-  @media(max-width:600px){.field-grid{grid-template-columns:1fr;}.platform-grid{grid-template-columns:repeat(3,1fr);}main{padding:1rem 1rem 3rem;}.field.full{grid-column:1;}}
+  /* =========================================
+     結果呈現與 Loading
+     ========================================= */
+  .loading { text-align: center; padding: 2.5rem; color: var(--text-muted); font-size: 14px; }
+  .loading-dots::after { content: ''; animation: dots 1.2s steps(4, end) infinite; }
+  @keyframes dots { 0%, 20% { content: '' } 40% { content: '.' } 60% { content: '..' } 80%, 100% { content: '...' } }
+  .error { background: var(--danger-bg); color: var(--danger-text); border: 1px solid #F5CCCC; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; }
+  .result-block { margin-bottom: 1.5rem; }
+  .platform-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .result-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { background: var(--bg); color: var(--text-muted); font-weight: 500; font-size: 12px; padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.6; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text-muted); font-size: 12px; white-space: nowrap; width: 140px; font-family: 'DM Mono', monospace; }
+  .action-row { display: flex; gap: 8px; margin-top: 1rem; }
+  .action-row .btn { flex: 1; text-align: center; }
+  
+  @media(max-width:600px){ .field-grid { grid-template-columns: 1fr; } .platform-grid { grid-template-columns: repeat(3, 1fr); } main { padding: 1rem 1rem 3rem; } .field.full { grid-column: 1; } }
 </style>
 </head>
 <body>
@@ -90,6 +107,7 @@
   <span class="header-sub">信貸廣告文案發想工具 (Powered by Claude)</span>
 </header>
 <main>
+  <!-- API 設定區 -->
   <div class="card">
     <div class="card-title">API 設定</div>
     <div class="field">
@@ -102,17 +120,18 @@
     </div>
   </div>
   
+  <!-- 文案設定區 -->
   <div class="card">
     <div class="card-title">切角與架構設定</div>
     <div class="field-grid">
-      <div class="field"><label>信貸產品 (群組)</label><div class="custom-select-wrap" id="product-wrap"></div></div>
-      <div class="field"><label>目標客群</label><div class="custom-select-wrap" id="audience-wrap"></div></div>
-      <div class="field"><label>新舊戶設定</label><div class="custom-select-wrap" id="customer-type-wrap"></div></div>
-      <div class="field"><label>痛點切角</label><div class="custom-select-wrap" id="painpoint-wrap"></div></div>
+      <div class="field"><label>信貸產品 (群組)</label><div id="product-wrap"></div></div>
+      <div class="field"><label>目標客群</label><div id="audience-wrap"></div></div>
+      <div class="field"><label>新舊戶設定</label><div id="customer-type-wrap"></div></div>
+      <div class="field"><label>痛點切角</label><div id="painpoint-wrap"></div></div>
       
       <div class="field">
         <label>文案架構</label>
-        <div class="custom-select-wrap" id="framework-wrap"></div>
+        <div id="framework-wrap"></div>
         <p class="hint">
           • <b>AIDA</b>: 抓注意→引興趣→激慾望→促行動<br>
           • <b>PAS</b>: 提出問題→放大痛點→解決方案<br>
@@ -122,41 +141,36 @@
       </div>
       
       <div class="field">
-        <label>文案風格</label>
-        <div class="custom-select-wrap" id="style-wrap"></div>
+        <label>文案風格</label><div id="style-wrap"></div>
       </div>
       
-      <div class="field"><label>促購元素(贈品)</label><div class="custom-select-wrap" id="promo-wrap"></div></div>
+      <div class="field"><label>促購元素(贈品)</label><div id="promo-wrap"></div></div>
       
       <!-- A/B Test 與 組數整合區塊 -->
       <div class="field full" style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 4px;">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          
           <div class="field">
             <label style="color: #B2821A;">啟用 A/B Test？</label>
-            <div class="custom-select-wrap" id="ab-toggle-wrap"></div>
+            <div id="ab-toggle-wrap"></div>
           </div>
-          
           <div class="field" id="ab-variable-container" style="display: none;">
             <label style="color: #B2821A;">測試變因 (控制單一變數)</label>
-            <div class="custom-select-wrap" id="ab-variable-wrap"></div>
+            <div id="ab-variable-wrap"></div>
             <p class="hint">系統將固定其他所有設定，僅針對此變因產出 A/B 兩版高度對照的文案。</p>
           </div>
-
           <div class="field" id="variation-container">
             <label>產出組數</label>
-            <div class="custom-select-wrap" id="variation-wrap"></div>
+            <div id="variation-wrap"></div>
             <p class="hint">可一次產出多組不同切角的文案變化</p>
           </div>
-
         </div>
       </div>
       
+      <!-- UTM 設定區 -->
       <div class="field full" style="margin-top: 12px;">
         <label>廣告到達網址（若有填寫，將依規則自動產出 UTM）</label>
         <input type="text" id="url" placeholder="https://tsbk.tw/..." />
       </div>
-      
       <div class="field">
         <label>素材名稱 (英文，供 UTM 使用)</label>
         <input type="text" id="utm-name" placeholder="例如：fast, promo" />
@@ -168,6 +182,7 @@
     </div>
   </div>
   
+  <!-- 平台選擇區 -->
   <div class="card">
     <div class="card-title">
       選擇平台 
@@ -188,12 +203,15 @@
   
   <button class="btn btn-primary" id="gen-btn" onclick="generate()">產出文案</button>
   
+  <!-- 產出結果區 -->
   <div id="result-area" style="display:none;margin-top:1rem;">
     <div class="card">
       <div class="card-title">文案產出結果</div>
       <div id="result-content"></div>
       
-      <p class="hint" style="margin-top: 12px; margin-bottom: 12px;">💡 備註：依據「1個中文字 = 2個半形字元」的規範，上方括號內的數字為精準計算邏輯結果（中文字與全形符號算 1 字，半形英數字算 0.5 字，最後無條件進位）。Excel 下載後的字數則為原生的 LEN() 公式長度。</p>
+      <p class="hint" style="margin-top: 12px; margin-bottom: 12px;">
+        💡 備註：依據「1個中文字 = 2個半形字元」的規範，上方括號內的數字為精準計算邏輯結果（中文字與全形符號算 1 字，半形英數字算 0.5 字，最後無條件進位）。Excel 下載後的字數則為原生的 LEN() 公式長度。
+      </p>
       
       <div class="action-row">
         <button class="btn" onclick="downloadExcel()">下載 Excel</button>
@@ -204,208 +222,26 @@
 </main>
 
 <script>
-function createSelect(containerId,options, onChangeCallback=null){
-  const wrap=document.getElementById(containerId);
-  let selected=options[0];
-  const display=document.createElement('div');
-  display.className='custom-select-display';
-  
-  const lbl=document.createElement('input');
-  lbl.type='text';
-  lbl.value=selected;
-  lbl.style.cssText='border:none;outline:none;background:transparent;width:100%;font-family:inherit;font-size:inherit;color:inherit;';
-  lbl.addEventListener('input', e => {
-      selected = e.target.value;
-      if(onChangeCallback) onChangeCallback(selected);
-  });
-  
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.setAttribute('viewBox','0 0 12 8');svg.classList.add('custom-select-arrow');
-  svg.innerHTML='<path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
-  display.appendChild(lbl);display.appendChild(svg);
-  const dd=document.createElement('div');dd.className='custom-select-dropdown';
-  let isOpen=false;
-  function renderOpts(){
-    dd.innerHTML='';
-    options.forEach((opt,i)=>{
-      const item=document.createElement('div');
-      item.className='custom-select-option'+(opt===selected?' selected':'');
-      const s=document.createElement('span');s.textContent=opt;item.appendChild(s);
-      if(i>0 && !['關閉','開啟'].includes(opt)){ 
-        const del=document.createElement('button');del.className='del-btn';del.textContent='刪除';
-        del.onclick=(e)=>{e.stopPropagation();options.splice(i,1);if(selected===opt){selected=options[0];lbl.value=selected;if(onChangeCallback) onChangeCallback(selected);}renderOpts();};
-        item.appendChild(del);
-      }
-      item.addEventListener('click',()=>{
-          selected=opt;lbl.value=selected;
-          if(onChangeCallback) onChangeCallback(selected);
-          close();
-      });
-      dd.appendChild(item);
-    });
-    
-    if(containerId !== 'ab-toggle-wrap' && containerId !== 'variation-wrap') {
-        const addRow=document.createElement('div');addRow.className='custom-select-add';
-        const inp=document.createElement('input');inp.type='text';inp.placeholder='新增自訂選項...';
-        const abtn=document.createElement('button');abtn.textContent='新增';
-        abtn.onclick=()=>{
-            const v=inp.value.trim();if(!v)return;
-            options.push(v);selected=v;lbl.value=v;inp.value='';
-            if(onChangeCallback) onChangeCallback(selected);
-            renderOpts();close();
-        };
-        inp.addEventListener('keydown',e=>{if(e.key==='Enter')abtn.click();});
-        addRow.appendChild(inp);addRow.appendChild(abtn);dd.appendChild(addRow);
-    }
-  }
-  function close(){isOpen=false;dd.classList.remove('open');display.classList.remove('open');}
-  
-  lbl.addEventListener('click', e => e.stopPropagation());
-  lbl.addEventListener('focus', e => { isOpen=true; dd.classList.add('open'); display.classList.add('open'); });
-  svg.addEventListener('click', e => { e.stopPropagation(); isOpen=!isOpen; dd.classList.toggle('open',isOpen); display.classList.toggle('open',isOpen); });
-  display.addEventListener('click', e => { if(e.target!==lbl) lbl.focus(); });
-  document.addEventListener('click', e => { if(!wrap.contains(e.target)) close(); });
-  
-  renderOpts();wrap.appendChild(display);wrap.appendChild(dd);
-  
-  return {
-    getValue:()=>selected,
-    getDisplayElement:()=>display
-  };
-}
+/**
+ * ============================================================================
+ * 【1. 常數與設定區】 - 維護 Prompt 與平台規格請改這裡
+ * ============================================================================
+ */
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514'; // 使用的模型版本
 
-// 建立下拉選單
-const productSel = createSelect('product-wrap',['不分大小額','大額','小額']);
-const audienceSel = createSelect('audience-wrap',['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','裝潢族','購車族','日常消費族','已還款一段時間的既有戶','已結清貸款的既有戶']);
-const customerTypeSel = createSelect('customer-type-wrap',['不分新舊戶','新戶','舊戶']);
-const painpointSel = createSelect('painpoint-wrap',['覺得貴','只想借小額','申辦流程繁瑣','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
-const frameworkSel = createSelect('framework-wrap',['PAS (問題→痛點→解方)', 'AIDA (注意→興趣→慾望→行動)', 'FAB (特點→優點→好處)', 'Benefit over Feature (好處優先)']);
-const styleSel = createSelect('style-wrap',['專業型', '故事感', '幽默感']);
-const promoSel = createSelect('promo-wrap',['不加','輸入【RR2026】撥款後享最高10,000點台新Point','數量有限，限量前50名','申請最快3分鐘，核貸後最快18分鐘撥款','申請不用錢，喜歡再撥款']);
-
-const variationSel = createSelect('variation-wrap',['1組','2組','3組']);
-
-// A/B Test 相關邏輯
-const abVariableSel = createSelect('ab-variable-wrap',['有無最低月付','有無行動呼籲 (CTA)','理性數據 vs 感性訴求','第一人稱(我) vs 第三人稱(你)']);
-
-const abToggleSel = createSelect('ab-toggle-wrap', ['關閉', '開啟'], (val) => {
-    const varContainer = document.getElementById('variation-container');
-    const abVarContainer = document.getElementById('ab-variable-container');
-    const abToggleDisplay = abToggleSel.getDisplayElement();
-    
-    if(val === '開啟') {
-        varContainer.style.display = 'none';
-        abVarContainer.style.display = 'block';
-        abToggleDisplay.classList.add('ab-test-active');
-    } else {
-        varContainer.style.display = 'block';
-        abVarContainer.style.display = 'none';
-        abToggleDisplay.classList.remove('ab-test-active');
-    }
-});
-
-
-// 平台按鈕與計數器邏輯
-const platformCounter = document.getElementById('platform-counter');
-function updatePlatformCount() {
-  const count = document.querySelectorAll('.platform-btn.active').length;
-  platformCounter.textContent = count === 0 ? '尚未選擇' : `選擇 ${count} 個`;
-}
-
-document.querySelectorAll('.platform-btn').forEach(btn=>btn.addEventListener('click',()=> {
-  btn.classList.toggle('active');
-  updatePlatformCount();
-}));
-
-// 預設全不選，初始化計數器
-updatePlatformCount();
-
-function getSelectedPlatforms(){return[...document.querySelectorAll('.platform-btn.active')].map(b=>b.dataset.p);}
-
-let apiKey='',resultData=[];
-
-function saveKey(){
-  const v=document.getElementById('api-key').value.trim();
-  if(!v.startsWith('sk-ant-')){alert('格式不對，請確認 Key 是否正確（應以 sk-ant- 開頭）');return;}
-  apiKey=v;document.getElementById('api-key').value='••••••••••••••••••••••••••••••';
-  document.getElementById('key-status').style.display='block';
-}
-
-const platformSpecs={
-  'Pmax':'標題15字x5組(1組含台新Richart信貸)、長標題45字(含台新Richart信貸)、短說明30字、長說明45字x4則(1則含台新Richart信貸、1則放短版警語)。',
-  'DemandGen':'標題20字x5組(1組含台新Richart信貸)、長說明45字x5則(1則含台新Richart信貸、1則放短版警語)。',
-  'Meta/FB':'標題12字、內文200字(含長版警語)、連結說明15字。',
-  'YouTube':'長標題45字、說明欄放短版警語(獨立佔滿)、行動號召固定「立即申請」、標題7字(含台新Richart信貸)。',
-  'LINELAP':'大圖標題10字、內文35字(含台新Richart信貸)、小圖標題10字、長標題17字。',
-  '推播':'標題7字、內文100字(含推播版警語)。輸出格式：【標題】內文',
-  '簡訊':'標題7字、內文70字(含簡訊警語，不含帶有UTM的連結)。輸出格式：【標題】內文+連結',
-  'BTS':'APP首頁標題7字、Bottom Sheet主標15字、內容50字、Action固定「立即申請」、備註100字(放長版警語)。',
-  'EDM':'信件主旨12字(不需警語)。'
+const PLATFORM_SPECS = {
+  'Pmax': '標題15字x5組(1組含台新Richart信貸)、長標題45字(含台新Richart信貸)、短說明30字、長說明45字x4則(1則含台新Richart信貸、1則放短版警語)。',
+  'DemandGen': '標題20字x5組(1組含台新Richart信貸)、長說明45字x5則(1則含台新Richart信貸、1則放短版警語)。',
+  'Meta/FB': '標題12字、內文200字(含長版警語)、連結說明15字。',
+  'YouTube': '長標題45字、說明欄放短版警語(獨立佔滿)、行動號召固定「立即申請」、標題7字(含台新Richart信貸)。',
+  'LINELAP': '大圖標題10字、內文35字(含台新Richart信貸)、小圖標題10字、長標題17字。',
+  '推播': '標題7字、內文100字(含推播版警語)。輸出格式：【標題】內文',
+  '簡訊': '標題7字、內文70字(含簡訊警語，不含帶有UTM的連結)。輸出格式：【標題】內文+連結',
+  'BTS': 'APP首頁標題7字、Bottom Sheet主標15字、內容50字、Action固定「立即申請」、備註100字(放長版警語)。',
+  'EDM': '信件主旨12字(不需警語)。'
 };
 
-// 計算字數
-function getCharCount(str) {
-  if (!str) return 0;
-  let len = 0;
-  for (let i = 0; i < str.length; i++) {
-    len += str.charCodeAt(i) > 255 ? 1 : 0.5;
-  }
-  return Math.ceil(len);
-}
-
-async function generate(){
-  if(!apiKey){alert('請先輸入並儲存 Claude API Key');return;}
-  const platforms=getSelectedPlatforms();
-  if(!platforms.length){alert('請至少選擇一個平台才能產出！');return;}
-  
-  const product = productSel.getValue();
-  const audience = audienceSel.getValue();
-  const customerType = customerTypeSel.getValue();
-  const painpoint = painpointSel.getValue();
-  const framework = frameworkSel.getValue();
-  const style = styleSel.getValue();
-  const promo = promoSel.getValue();
-  
-  const isAbTest = abToggleSel.getValue() === '開啟';
-  const abVariable = abVariableSel.getValue();
-  
-  const numGroups = isAbTest ? 2 : (parseInt(variationSel.getValue()) || 1);
-  
-  // 強制清除網址中的任何空白
-  const url = document.getElementById('url').value.trim().replace(/\s+/g, '');
-  // 強制將素材名稱的空白替換為底線
-  const utmName = (document.getElementById('utm-name').value || 'promo').trim().replace(/\s+/g, '_');
-  // 強制清除日期中的任何空白與橫線
-  const utmDate = (document.getElementById('utm-date').value || new Date().toISOString().slice(0,10).replace(/-/g,'')).trim().replace(/\s+/g, '');
-  
-  let groupCode = '';
-  if(product === '大額') groupCode = 'b';
-  else if(product === '小額') groupCode = 's';
-
-  const btn=document.getElementById('gen-btn');
-  btn.disabled=true;btn.textContent='產出中...';
-  document.getElementById('result-area').style.display='block';
-  document.getElementById('result-content').innerHTML='<div class="loading"><span class="loading-dots">Claude 正在發想文案</span></div>';
-  
-  const selectedSpecs=platforms.map(p=>`- ${p}：${platformSpecs[p]||'依平台規格'}`).join('\n');
-  
-  let multiGroupPrompt = "";
-  if (isAbTest) {
-      multiGroupPrompt = `
-【七、A/B Test 嚴格規範】
-使用者已開啟 A/B Test 模式！測試變因為：「${abVariable}」。
-請為每一個勾選的平台，剛好產出 2 組文案（A版 與 B版），合併在同一個 fields 陣列中回傳。
-- 【A版】必須包含或符合該變因的正向條件。
-- 【B版】必須不包含或符合該變因的反向條件。
-- ⚠️ 極度重要：為了控制變因，A版與B版的「句型架構、長度、主視覺感」必須「幾乎完全一樣」！除了測試變因相關的幾個字詞差異之外，其餘文案必須複製貼上。絕對不能發散變成兩篇截然不同的文案。
-- 輸出時，請務必在欄位名稱最前面加上版別，例如："【A版】標題"、"【B版】標題"、"【A版】內文"、"【B版】內文" 以此類推。`;
-  } else if (numGroups > 1) {
-      multiGroupPrompt = `
-【七、多組產出規範】
-⚠️ 注意：用戶要求產出 ${numGroups} 組不同的文案！請將同一平台的多組文案結果合併在同一個 platform 的 fields 陣列中。為了區分，請務必在欄位名稱前面加上組別（例如："【第1組】標題"、"【第1組】內文"、"【第2組】標題"、"【第2組】內文"），確保每個勾選的平台都產出完整的 ${numGroups} 組文案。`;
-  }
-
-  const systemPrompt=`你是 Richart 信貸廣告文案專家。嚴格遵守以下所有規範：
+const SYSTEM_PROMPT_BASE = `你是 Richart 信貸廣告文案專家。嚴格遵守以下所有規範：
 
 【一、最高指導原則與平台限制】
 1. 絕對只為用戶指定的平台產出文案！
@@ -433,7 +269,232 @@ async function generate(){
   B. EDM 規範
     信件主旨： 絕對不需要加警語。
 
-【三、UTM 產出規則】
+【三、文案架構與風格要求】
+- 必須嚴格採用用戶指定的「文案架構」與「文案風格」進行撰寫。
+- 若客群為卡循族：絕對不溝通具體利率數字(如2.1%)，改以「整合卡債、降低月付壓力、找回生活品質」切入。
+- 若文案中要提到利率，要寫單一利率，而非寫總費用年百分率，除了科技業專案外，利率都應該是x.x%起或最低x.x%，如：2.88%起
+
+【四、字數嚴格限制（致命錯誤）】
+AI 模型經常犯字數超標的錯誤。請你在生成每一句文案時，務必嚴格計算字數！
+(1個中文字與全形符號 = 1字，半形英數字 = 0.5字，無條件進位)
+寧可少寫幾個字，也【絕對不能超過】規定的字數上限！例如規定「15字」，請盡量控制在 13~14 字。超出字數會導致廣告系統崩潰。
+
+【五、回傳格式】
+必須只回傳乾淨的 JSON 格式資料，不要有任何 Markdown 標記或其他廢話，格式如下：
+{"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}
+`;
+
+/**
+ * ============================================================================
+ * 【2. UI 元件與共用函式區】 - 畫面互動邏輯
+ * ============================================================================
+ */
+
+// API Key 變數與儲存邏輯
+let apiKey = '', resultData = [];
+function saveKey() {
+  const v = document.getElementById('api-key').value.trim();
+  if (!v.startsWith('sk-ant-')) {
+      alert('格式不對，請確認 Key 是否正確（應以 sk-ant- 開頭）');
+      return;
+  }
+  apiKey = v;
+  document.getElementById('api-key').value = '••••••••••••••••••••••••••••••';
+  document.getElementById('key-status').style.display = 'block';
+}
+
+// 建立自訂下拉選單的通用函式 (已展開增加可讀性)
+function createSelect(containerId, options, onChangeCallback = null) {
+  const wrap = document.getElementById(containerId);
+  let selected = options[0];
+  
+  // 建立顯示區塊
+  const display = document.createElement('div');
+  display.className = 'custom-select-display';
+  
+  const lbl = document.createElement('input');
+  lbl.type = 'text';
+  lbl.value = selected;
+  lbl.style.cssText = 'border:none;outline:none;background:transparent;width:100%;font-family:inherit;font-size:inherit;color:inherit;';
+  lbl.addEventListener('input', e => {
+      selected = e.target.value;
+      if(onChangeCallback) onChangeCallback(selected);
+  });
+  
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 12 8');
+  svg.classList.add('custom-select-arrow');
+  svg.innerHTML = '<path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  
+  display.appendChild(lbl);
+  display.appendChild(svg);
+  
+  // 建立下拉選單區塊
+  const dd = document.createElement('div');
+  dd.className = 'custom-select-dropdown';
+  let isOpen = false;
+  
+  function renderOpts() {
+    dd.innerHTML = '';
+    options.forEach((opt, i) => {
+      const item = document.createElement('div');
+      item.className = 'custom-select-option' + (opt === selected ? ' selected' : '');
+      
+      const s = document.createElement('span');
+      s.textContent = opt;
+      item.appendChild(s);
+      
+      // 刪除按鈕邏輯 (開啟/關閉選項不允許刪除)
+      if (i > 0 && !['關閉','開啟'].includes(opt)) { 
+        const del = document.createElement('button');
+        del.className = 'del-btn';
+        del.textContent = '刪除';
+        del.onclick = (e) => {
+            e.stopPropagation();
+            options.splice(i, 1);
+            if (selected === opt) {
+                selected = options[0];
+                lbl.value = selected;
+                if(onChangeCallback) onChangeCallback(selected);
+            }
+            renderOpts();
+        };
+        item.appendChild(del);
+      }
+      
+      item.addEventListener('click', () => {
+          selected = opt;
+          lbl.value = selected;
+          if(onChangeCallback) onChangeCallback(selected);
+          close();
+      });
+      dd.appendChild(item);
+    });
+    
+    // 新增自訂選項區塊
+    if (containerId !== 'ab-toggle-wrap' && containerId !== 'variation-wrap') {
+        const addRow = document.createElement('div');
+        addRow.className = 'custom-select-add';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.placeholder = '新增自訂選項...';
+        
+        const abtn = document.createElement('button');
+        abtn.textContent = '新增';
+        abtn.onclick = () => {
+            const v = inp.value.trim();
+            if (!v) return;
+            options.push(v);
+            selected = v;
+            lbl.value = v;
+            inp.value = '';
+            if (onChangeCallback) onChangeCallback(selected);
+            renderOpts();
+            close();
+        };
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') abtn.click(); });
+        
+        addRow.appendChild(inp);
+        addRow.appendChild(abtn);
+        dd.appendChild(addRow);
+    }
+  }
+  
+  function close() {
+      isOpen = false;
+      dd.classList.remove('open');
+      display.classList.remove('open');
+  }
+  
+  // 事件監聽器綁定
+  lbl.addEventListener('click', e => e.stopPropagation());
+  lbl.addEventListener('focus', e => { isOpen = true; dd.classList.add('open'); display.classList.add('open'); });
+  svg.addEventListener('click', e => { e.stopPropagation(); isOpen = !isOpen; dd.classList.toggle('open', isOpen); display.classList.toggle('open', isOpen); });
+  display.addEventListener('click', e => { if (e.target !== lbl) lbl.focus(); });
+  document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+  
+  renderOpts();
+  wrap.appendChild(display);
+  wrap.appendChild(dd);
+  
+  return {
+    getValue: () => selected,
+    getDisplayElement: () => display
+  };
+}
+
+// 初始化下拉選單實體
+const productSel = createSelect('product-wrap', ['不分大小額','大額','小額']);
+const audienceSel = createSelect('audience-wrap', ['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','裝潢族','購車族','日常消費族','已還款一段時間的既有戶','已結清貸款的既有戶']);
+const customerTypeSel = createSelect('customer-type-wrap', ['不分新舊戶','新戶','舊戶']);
+const painpointSel = createSelect('painpoint-wrap', ['覺得貴','只想借小額','申辦流程繁瑣','急用錢但撥款太慢','怕被親友同事知道在借貸','多筆借款帳務管理混亂','他行核給額度太低','想要隨借隨還不被綁死']);
+const frameworkSel = createSelect('framework-wrap', ['PAS (問題→痛點→解方)', 'AIDA (注意→興趣→慾望→行動)', 'FAB (特點→優點→好處)', 'Benefit over Feature (好處優先)']);
+const styleSel = createSelect('style-wrap', ['專業型', '故事感', '幽默感']);
+const promoSel = createSelect('promo-wrap', ['不加','輸入【RR2026】撥款後享最高10,000點台新Point','數量有限，限量前50名','申請最快3分鐘，核貸後最快18分鐘撥款','申請不用錢，喜歡再撥款']);
+const variationSel = createSelect('variation-wrap', ['1組','2組','3組']);
+const abVariableSel = createSelect('ab-variable-wrap', ['有無最低月付','有無行動呼籲 (CTA)','理性數據 vs 感性訴求','第一人稱(我) vs 第三人稱(你)']);
+
+// A/B Test 切換顯示邏輯
+const abToggleSel = createSelect('ab-toggle-wrap', ['關閉', '開啟'], (val) => {
+    const varContainer = document.getElementById('variation-container');
+    const abVarContainer = document.getElementById('ab-variable-container');
+    const abToggleDisplay = abToggleSel.getDisplayElement();
+    
+    if (val === '開啟') {
+        varContainer.style.display = 'none';
+        abVarContainer.style.display = 'flex';
+        abToggleDisplay.classList.add('ab-test-active');
+    } else {
+        varContainer.style.display = 'flex';
+        abVarContainer.style.display = 'none';
+        abToggleDisplay.classList.remove('ab-test-active');
+    }
+});
+
+// 平台按鈕與計數器邏輯
+const platformCounter = document.getElementById('platform-counter');
+function updatePlatformCount() {
+  const count = document.querySelectorAll('.platform-btn.active').length;
+  platformCounter.textContent = count === 0 ? '尚未選擇' : `選擇 ${count} 個`;
+}
+
+document.querySelectorAll('.platform-btn').forEach(btn => btn.addEventListener('click', () => {
+  btn.classList.toggle('active');
+  updatePlatformCount();
+}));
+
+// 初始化
+updatePlatformCount();
+
+// 取得選擇的平台陣列
+function getSelectedPlatforms() {
+    return [...document.querySelectorAll('.platform-btn.active')].map(b => b.dataset.p);
+}
+
+// 計算字數 (中文字1字，半形0.5字)
+function getCharCount(str) {
+  if (!str) return 0;
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    len += str.charCodeAt(i) > 255 ? 1 : 0.5;
+  }
+  return Math.ceil(len);
+}
+
+/**
+ * ============================================================================
+ * 【3. 核心邏輯區】 - 串接 API、生成 Prompt、解析資料、下載 Excel
+ * ============================================================================
+ */
+
+// 動態組裝 UTM 規則字串
+function buildUtmPrompt(productGroup, utmName, utmDate) {
+    let groupCode = '';
+    if (productGroup === '大額') groupCode = 'b';
+    else if (productGroup === '小額') groupCode = 's';
+    
+    return `
+【六、UTM 產出規則】
 若用戶有提供到達網址，外部廣告及簡訊需獨立新增一列欄位名稱為「最終到達網址」並組裝 UTM：
 格式：[網址]?utm_source=[來源]&utm_medium=[媒介]&utm_campaign=richart_${groupCode}loan${utmName}_${utmDate}
 - Pmax: utm_source=google, utm_medium=pmax
@@ -444,26 +505,69 @@ async function generate(){
 - EDM: utm_source=richart, utm_medium=edm
 - 簡訊: utm_source=richart, utm_medium=sms (注意：簡訊的連結必須帶有此 UTM 並放在內文最後)
 ⚠️ 網址無空白警告：最終輸出的到達網址與 UTM 字串中【絕對不可以有任何空格 (Space)】。符號（?、=、&）前後必須緊密相連。
-⚠️ 內部渠道（BTS、推播）絕對不需加 UTM 參數。
+⚠️ 內部渠道（BTS、推播）絕對不需加 UTM 參數。`;
+}
 
-【四、文案架構與風格要求】
-- 必須嚴格採用用戶指定的「文案架構」與「文案風格」進行撰寫。
-- 若客群為卡循族：絕對不溝通具體利率數字(如2.1%)，改以「整合卡債、降低月付壓力、找回生活品質」切入。
-- 若文案中要提到利率，要寫單一利率，而非寫總費用年百分率，除了科技業專案外，利率都應該是x.x%起或最低x.x%，如：2.88%起
-
-【五、字數嚴格限制（致命錯誤）】
-AI 模型經常犯字數超標的錯誤。請你在生成每一句文案時，務必嚴格計算字數！
-(1個中文字與全形符號 = 1字，半形英數字 = 0.5字，無條件進位)
-寧可少寫幾個字，也【絕對不能超過】規定的字數上限！例如規定「15字」，請盡量控制在 13~14 字。超出字數會導致廣告系統崩潰。
-
-【六、回傳格式】
-必須只回傳乾淨的 JSON 格式資料，不要有任何 Markdown 標記或其他廢話，格式如下：
-{"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}
-${multiGroupPrompt}`;
-
-  const userPrompt=`目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n信貸產品(群組)：${product}\n文案架構：${framework}\n文案風格：${style}\n促購元素(贈品)：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
+// 執行主程式發送 API
+async function generate() {
+  if (!apiKey) {
+      alert('請先輸入並儲存 Claude API Key');
+      return;
+  }
+  const platforms = getSelectedPlatforms();
+  if (!platforms.length) {
+      alert('請至少選擇一個平台才能產出！');
+      return;
+  }
   
-  try{
+  // 取得 UI 參數
+  const product = productSel.getValue();
+  const audience = audienceSel.getValue();
+  const customerType = customerTypeSel.getValue();
+  const painpoint = painpointSel.getValue();
+  const framework = frameworkSel.getValue();
+  const style = styleSel.getValue();
+  const promo = promoSel.getValue();
+  const isAbTest = abToggleSel.getValue() === '開啟';
+  const abVariable = abVariableSel.getValue();
+  const numGroups = isAbTest ? 2 : (parseInt(variationSel.getValue()) || 1);
+  
+  // 處理 URL 相關變數
+  const url = document.getElementById('url').value.trim().replace(/\s+/g, '');
+  const utmName = (document.getElementById('utm-name').value || 'promo').trim().replace(/\s+/g, '_');
+  const utmDate = (document.getElementById('utm-date').value || new Date().toISOString().slice(0,10).replace(/-/g,'')).trim().replace(/\s+/g, '');
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = '產出中...';
+  document.getElementById('result-area').style.display = 'block';
+  document.getElementById('result-content').innerHTML = '<div class="loading"><span class="loading-dots">Claude 正在發想文案</span></div>';
+  
+  const selectedSpecs = platforms.map(p => `- ${p}：${PLATFORM_SPECS[p] || '依平台規格'}`).join('\n');
+  
+  // 決定多組或 A/B Test 的 Prompt
+  let multiGroupPrompt = "";
+  if (isAbTest) {
+      multiGroupPrompt = `
+【七、A/B Test 嚴格規範】
+使用者已開啟 A/B Test 模式！測試變因為：「${abVariable}」。
+請為每一個勾選的平台，剛好產出 2 組文案（A版 與 B版），合併在同一個 fields 陣列中回傳。
+- 【A版】必須包含或符合該變因的正向條件。
+- 【B版】必須不包含或符合該變因的反向條件。
+- ⚠️ 極度重要：為了控制變因，A版與B版的「句型架構、長度、主視覺感」必須「幾乎完全一樣」！除了測試變因相關的幾個字詞差異之外，其餘文案必須複製貼上。絕對不能發散變成兩篇截然不同的文案。
+- 輸出時，請務必在欄位名稱最前面加上版別，例如："【A版】標題"、"【A版】內文" 以此類推。`;
+  } else if (numGroups > 1) {
+      multiGroupPrompt = `
+【七、多組產出規範】
+⚠️ 注意：要求產出 ${numGroups} 組不同的文案！請將同一平台的多組文案合併在同一個 platform 的 fields 陣列中。請務必在欄位名稱前面加上組別（例如："【第1組】標題"、"【第2組】標題"）。`;
+  }
+
+  // 組合最終 System Prompt
+  const finalSystemPrompt = SYSTEM_PROMPT_BASE + buildUtmPrompt(product, utmName, utmDate) + multiGroupPrompt;
+
+  const userPrompt = `目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n信貸產品(群組)：${product}\n文案架構：${framework}\n文案風格：${style}\n促購元素(贈品)：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
+  
+  try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -473,49 +577,74 @@ ${multiGroupPrompt}`;
         'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: CLAUDE_MODEL,
         max_tokens: 3000,
-        system: systemPrompt,
+        system: finalSystemPrompt,
         messages: [{ role: 'user', content: userPrompt }]
       })
     });
     
-    const data=await res.json();
-    if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     
-    const text = data.content?.map(c=>c.text||'').join('')||'';
-    const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+    const text = data.content?.map(c => c.text || '').join('') || '';
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
     
     resultData = parsed.results;
     renderResults(resultData);
-  }catch(e){
-    document.getElementById('result-content').innerHTML=`<div class="error">產出失敗：${e.message}</div>`;
+  } catch(e) {
+    document.getElementById('result-content').innerHTML = `<div class="error">產出失敗：${e.message}</div>`;
   }
-  btn.disabled=false;btn.textContent='重新產出';
+  
+  btn.disabled = false;
+  btn.textContent = '重新產出';
 }
 
-function renderResults(results){
-  document.getElementById('result-content').innerHTML=results.map(r=>`<div class="result-block"><div class="platform-label">${r.platform}</div><div class="result-table-wrap"><table><thead><tr><th>欄位</th><th>文案</th></tr></thead><tbody>${r.fields.map(f=>`<tr><td>${f.name} <span style="color:var(--text-hint); font-weight:normal;">(${getCharCount(f.content)})</span></td><td>${f.content}</td></tr>`).join('')}</tbody></table></div></div>`).join('');
+// 渲染畫面結果
+function renderResults(results) {
+  document.getElementById('result-content').innerHTML = results.map(r => `
+    <div class="result-block">
+        <div class="platform-label">${r.platform}</div>
+        <div class="result-table-wrap">
+            <table>
+                <thead><tr><th>欄位</th><th>文案</th></tr></thead>
+                <tbody>
+                    ${r.fields.map(f => `<tr><td>${f.name} <span style="color:var(--text-hint); font-weight:normal;">(${getCharCount(f.content)})</span></td><td>${f.content}</td></tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>`).join('');
 }
 
-function downloadExcel(){
-  if(!resultData.length){alert('還沒有文案可以下載');return;}
-  if(typeof XLSX === 'undefined'){alert('Excel 套件載入失敗，請確認網路或重新整理網頁。');return;}
+// 下載 Excel 邏輯
+function downloadExcel() {
+  if (!resultData.length) {
+      alert('還沒有文案可以下載');
+      return;
+  }
+  if (typeof XLSX === 'undefined') {
+      alert('Excel 套件載入失敗，請確認網路或重新整理網頁。');
+      return;
+  }
+  
   try {
-    const wb=XLSX.utils.book_new();
-    resultData.forEach(r=>{
-      // 在 Excel 中新增字數欄位，並填入原生 LEN 函數
-      const rows=[['欄位','文案', '字數']];
+    const wb = XLSX.utils.book_new();
+    resultData.forEach(r => {
+      // 標題列新增字數
+      const rows = [['欄位', '文案', '字數']];
       r.fields.forEach((f, index) => {
-        // index 從 0 開始，對應到 Excel 第 2 列 (B2)
+        // index 從 0 開始，資料在 Excel 從第 2 列開始，所以是 B(index + 2)
         rows.push([f.name, f.content, { f: `LEN(B${index + 2})` }]);
       });
-      const ws=XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols']=[{wch:22},{wch:65},{wch:10}];
+      
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{wch:22}, {wch:65}, {wch:10}];
+      
       const safeSheetName = r.platform.replace(/[\\/*?:[\]]/g, '_').slice(0,31);
-      XLSX.utils.book_append_sheet(wb,ws,safeSheetName);
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
     });
-    XLSX.writeFile(wb,`Richart文案_${new Date().toISOString().slice(0,10)}.xlsx`);
+    
+    XLSX.writeFile(wb, `Richart文案_${new Date().toISOString().slice(0,10)}.xlsx`);
   } catch (e) {
     alert('下載失敗：' + e.message);
   }
