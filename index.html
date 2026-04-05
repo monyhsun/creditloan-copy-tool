@@ -47,7 +47,7 @@
   .key-row input { flex: 1; }
   
   /* 自訂下拉選單樣式 */
-  .custom-select-wrap { position: relative; }
+  .custom-select-wrap { position: relative; width: 100%; }
   .custom-select-display { width: 100%; padding: 9px 36px 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; transition: border-color .15s; }
   .custom-select-display:hover { border-color: var(--border-strong); }
   .custom-select-display.open { border-color: var(--text); }
@@ -318,15 +318,15 @@ const STYLE_PROMPT_GUIDELINES = `
 
 2. 親切感
 - 側重「陪伴」與「減壓」，強調「我來搞定」的體貼感，訴求美好願景。
-- [範例1] Hi,居家風格由你做主，資金週轉我來搞定》核貸NT$50萬，10年還款最低月付只要NT$4,623起》Richart信貸總費用年百分率為：2.10%~16.39% 
+- [範例1] Hi,居家風格由你做主，資金週轉我來搞定》核貸50萬元，10年還款最低月付只要4,623元起》Richart信貸總費用年百分率為：2.10%~16.39% 
 
 3. 幽默感
 - 結合社群最火紅的迷因梗、流行語或改編洗腦歌詞（例如：阿姨我不想努力了、終於看開愛回不來等），語氣要有趣，讓受眾覺得品牌很懂玩。禁止使用過時老梗。
-- [範例1] 最怕空氣突然安靜...尤其是跟朋友急著調錢的那瞬間>< Richart信貸申請最快分鐘，核貸後最快18分鐘撥款，需要錢不用欠人情>>總費用年百分率2.10%~16.39%以實際審核條件為準
+- [範例1] 最怕空氣突然安靜...尤其是跟朋友急著調錢的那瞬間>< Richart信貸申請最快3分鐘，核貸後最快18分鐘撥款，需要錢不用欠人情>>總費用年百分率2.10%~16.39%以實際審核條件為準
 
 4. 賈伯斯感
 - 追求極簡與哲學高度。多用短句、斷行，強調「產品即藝術」與「本該如此」的霸氣。
-- [範例1] 設計一個家，需要一千個決定，但資金只需要Richart信貸，最長120期，月付4,623元起，讓你輕鬆創造你的世界>>總費用年百分率2.10%~16.39%以實際審核條件為準，月付以2.1%手續費0元還款120期試算
+- [範例1] 設計一個家，需要一千個決定，但資金只需要Richart信貸，還款最長120期，月付4,623元起，讓你輕鬆創造你的世界>>總費用年百分率2.10%~16.39%以實際審核條件為準，月付以2.1%手續費0元還款120期試算
 
 5. 直接促銷
 - 直接溝通產品優惠與行動呼籲，講求效率與轉換。
@@ -356,7 +356,8 @@ function saveKey() {
 function createSelect(containerId, options, onChangeCallback = null) {
   const wrap = document.getElementById(containerId);
   
-  // 👉 新增此行賦予容器 relative 定位，修復下拉選單全螢幕跑版問題
+  // 👉 為了避免 CSS 選擇器解析異常，這裡直接寫入 inline style 強制 relative 定位！
+  wrap.style.position = 'relative';
   wrap.classList.add('custom-select-wrap'); 
 
   let selected = options[0];
